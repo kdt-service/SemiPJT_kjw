@@ -2,221 +2,36 @@ import numpy as np
 import pandas as pd
 import random as rnd
 
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-from sklearn.svm import SVC, LinearSVC
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import KNeighborsClassifier
 
-train_df = pd.read_csv("C:\\Users\\kjy15\\Desktop_MLP\\pjt_Titanic_8\\Task_KJW\\TT_3_train.csv")
-test_df = pd.read_csv("C:\\Users\\kjy15\\Desktop_MLP\\pjt_Titanic_8\\Task_KJW\\TT_3_test.csv")
+train_df = pd.read_csv("./semiPjt_train.csv")
+test_df = pd.read_csv("./semiPjt_test.csv")
 
-train_df.info()
-print('#'*100)
-print('#'*100)
-test_df.info()
+# 입력변수 데이터 생성
+df = pd.read_csv('semiPjt_train.csv')
+X = df[['환율', '금리', '배당수익율', '당기순이익율', 'PER', '핵심키워드종합순위']]
 
-print(train_df.columns)
-test_df.columns
+# 종속변수 라벨링
+y = y.map({'선정': 1, '비선정': 0})
 
-train_df = train_df.drop(['Name'], axis=1)
-test_df = test_df.drop(['Name'], axis=1)
+# 입력변수 조건 충족하는 종목 전처리 필터링
+X_selected = X[(X['환율'] >= 1250) & (X['금리'] <= 2.0%) & (X['배당수익율'] >= 4%) & (X['당기순이익율'] >= 10%) & (X['PER'] <= 12)& (X['핵심키워드종합순위'] <= 3)]
 
-train_df.pivot_table(values = 'Age', index = 'Pclass', aggfunc = 'mean')
+# Random Forest 모델 훈련
+rf = RandomForestClassifier(n_estimators=100)
+rf.fit(X_selected, y)
 
-train_df.pivot_table(aggfunc = 'mean', values = 'Age', index = 'Pclass')  
+#정확도 계산
+rf.score(X_selected, y)
 
-train_age_null = train_df[train_df.Age.isnull()]
+# 테스트 데이터에 대한 종속변수(선정/비선정) 예측
+new_X = pd.read_csv('semiPjt_test.csv')
+y_pred = rf.predict(new_X)
 
-train_age_null.info()  
-
-train_age_null.head(2)  # Age 컬럼의 값들이 NaN 인 것을 볼 수 있다.
-
-train_first = train_age_null[train_age_null.Pclass == 1]
-train_second = train_age_null[train_age_null.Pclass == 2]
-train_third = train_age_null[train_age_null.Pclass == 3]
-
-train_first.info()
-print('\n')
-train_second.info()
-print('\n')
-train_third.info()
-
-train_firstclass = train_first[train_first.Age.isnull()].fillna(value = '38')
-train_secondclass = train_second[train_second.Age.isnull()].fillna(value = '30')
-train_thirdclass = train_third[train_third.Age.isnull()].fillna(value = '25')
-
-train_df[train_df.Age.isnull()]  
-
-train_drop_na = train_df.dropna(subset = ['Age'])
-
-train_drop_na.info()  
-
-train_drop_na.Cabin.info()
-print('\n ')
-train_firstclass.Cabin.info()
-print('\n ')
-train_secondclass.Cabin.info()
-print('\n ')
-train_thirdclass.Cabin.info()
-
-train_concat = pd.concat([train_drop_na, train_firstclass, train_secondclass, train_thirdclass])
-train_df = train_concat
-train_df.info()
-
-train_df
-
-train_df = train_df.astype({'Age':'int'})
-train_df.info()
-
-test_age_null = test_df[test_df.Age.isnull()]
-test_firstclass = test_age_null[test_age_null.Pclass == 1]
-test_second = test_age_null[test_age_null.Pclass == 2]
-test_third = test_age_null[test_age_null.Pclass == 3]
-
-test_firstclass = test_firstclass.fillna(value = '38')
-test_secondclass = test_second.fillna(value = '30')
-test_thirdclass = test_third.fillna(value = '25')
-
-test_drop_na = test_df.dropna(subset = ['Age'])
-
-test_concat = pd.concat([test_drop_na, test_firstclass, test_secondclass, test_thirdclass])
-test_df = test_concat
-
-test_df = test_df.astype({'Age':'int'})
-test_df.info()
-
-train_df["Embarked"].fillna('S', inplace=True)
-test_df["Embarked"].fillna('S', inplace=True)
-train_df.info()
-test_df.info()
-test_df["Fare"].fillna(0, inplace=True)
-
-pclass_train_dummies = pd.get_dummies(train_df['Pclass'])
-pclass_test_dummies = pd.get_dummies(test_df['Pclass'])
-
-train_df.drop(['Pclass'], axis=1, inplace=True)
-test_df.drop(['Pclass'], axis=1, inplace=True)
-
-pclass_train_dummies.columns = ['First', 'Second', 'Third']
-pclass_test_dummies.columns = ['First', 'Second', 'Third']
-
-train_df = train_df.join(pclass_train_dummies)
-test_df = test_df.join(pclass_test_dummies)
-
-
-train_df.head()
-
-test_df.head()
-
-sex_train_dummies = pd.get_dummies(train_df['Sex'])
-sex_test_dummies = pd.get_dummies(test_df['Sex'])
-
-sex_train_dummies.head(2)
-
-sex_test_dummies.head(2)
-
-sex_train_dummies.columns = ['Female', 'Male']
-sex_test_dummies.columns = ['Female', 'Male']
-
-sex_train_dummies.head(3)
-
-sex_test_dummies.head(2)
-
-train_df.drop(['Sex'], axis=1, inplace=True)
-test_df.drop(['Sex'], axis=1, inplace=True)
-
-train_df = train_df.join(sex_train_dummies)
-test_df = test_df.join(sex_test_dummies)
-
-train_df.head(3)
-
-test_df.head(2)
-
-embarked_train_dummies = pd.get_dummies(train_df['Embarked'])
-embarked_test_dummies = pd.get_dummies(test_df['Embarked'])
-
-embarked_train_dummies.columns = ['S', 'C', 'Q']
-embarked_test_dummies.columns = ['S', 'C', 'Q']
-
-embarked_train_dummies.head(2)
-
-train_df.drop(['Embarked'], axis=1, inplace=True)
-test_df.drop(['Embarked'], axis=1, inplace=True)
-
-train_df.head(3)
-
-train_df = train_df.join(embarked_train_dummies)
-test_df = test_df.join(embarked_test_dummies)
-
-train_df.head(2)
-test_df.head(2)
-train_df.info()
-
-
-train_df = train_df.drop(['Cabin', 'Ticket','PassengerId'], axis=1)
-test_df = test_df.drop(['Cabin', 'Ticket'], axis=1)
-
-train_df.info()
-print('-'*80)
-test_df.info()
-# 결과를 보면 결측치가 있는 컬럼이 없습니다.
-
-train_df.head()
-
-X_train = train_df.drop("Survived",axis=1)
-Y_train = train_df["Survived"]
-X_test  = test_df.drop("PassengerId",axis=1).copy()
-
-
-X_train.head()
-
-random_forest = RandomForestClassifier(n_estimators=100)
-random_forest.fit(X_train, Y_train)
-Y_pred = random_forest.predict(X_test)
-random_forest.score(X_train, Y_train)
-
-random_forest = RandomForestClassifier(n_estimators=100)
-random_forest.fit(X_train, Y_train)
-Y_pred = random_forest.predict(X_test)
-random_forest.score(X_train, Y_train)
-
+# csv로 출력
 submission = pd.DataFrame({
-        "PassengerId": test_df["PassengerId"],
-        "Survived": Y_pred
+        "종목명": test_df["종목명"],
+        "선정/비선정": y_pred
     })
-submission.to_csv('titanic.csv', index=False)
+submission.to_csv('selection.csv', index=False)
 
-svc = SVC()
-svc.fit(X_train, Y_train)
-Y_pred = svc.predict(X_test)
-svc.score(X_train, Y_train)
-
-
-random_forest = RandomForestClassifier(n_estimators=100)
-random_forest.fit(X_train, Y_train)
-Y_pred = random_forest.predict(X_test)
-random_forest.score(X_train, Y_train)
-
-submission = pd.DataFrame({
-        "PassengerId": test_df["PassengerId"],
-        "Survived": Y_pred
-    })
-submission.to_csv('titanic.csv', index=False)
-
-knn = KNeighborsClassifier(n_neighbors = 3)
-knn.fit(X_train, Y_train)
-Y_pred = knn.predict(X_test)
-knn.score(X_train, Y_train)
-
-random_forest = RandomForestClassifier(n_estimators=100)
-random_forest.fit(X_train, Y_train)
-Y_pred = random_forest.predict(X_test)
-random_forest.score(X_train, Y_train)
-
-submission = pd.DataFrame({
-        "PassengerId": test_df["PassengerId"],
-        "Survived": Y_pred
-    })
-submission.to_csv('titanic.csv', index=False)
