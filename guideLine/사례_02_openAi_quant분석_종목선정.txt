@@ -1,0 +1,71 @@
+GPT-3 모델을 활용한 퀀트 투자 시스템 등이 있습니다.
+GPT-3 모델은 자연어 처리 분야에서 매우 뛰어난 성능을 보이는 모델로, 텍스트 기반의 데이터를 처리하고 다양한 문제를 해결할 수 있습니다. 이를 이용해 금융 시장의 뉴스나 기업 보고서 등의 비정형 데이터를 처리하여 투자에 대한 정보를 추출하고, 자동으로 투자 결정을 내리는 시스템이 개발될 수 있습니다.
+코드로 예를 들면, 아래는 GPT-3 모델을 활용한 퀀트 투자 시스템을 구현한 코드입니다.
+
+
+import openai
+import requests
+import json
+
+# OpenAI API key
+openai.api_key = "YOUR_API_KEY"
+	# OpenAI API Key를 만드는 방법은 다음과 같습니다.
+	# OpenAI 웹사이트(https://openai.com/)에서 계정을 만듭니다.
+	# 계정을 만들면, API Key를 발급받을 수 있는 페이지로 이동합니다.
+	# API Key를 발급받습니다. 발급된 키는 OpenAI 계정 페이지에서 확인할 수 있습니다.
+	# 발급받은 API Key를 코드에 적용하여 사용합니다.
+
+# 문장 생성 함수
+def generate_text(prompt, model, temperature=0.5):
+    response = openai.Completion.create(
+      engine=model,
+      prompt=prompt,
+      max_tokens=1024,
+      n=1,
+      stop=None,
+      temperature=temperature,
+    )
+
+    return response.choices[0].text.strip()
+
+# 투자 의사 결정 함수
+def make_decision(data):
+    # GPT-3 모델을 이용해 투자 결정에 필요한 정보 추출
+    company_info = generate_text(f"Extract company information from '{data['news_url']}'")
+    stock_price = generate_text(f"Extract stock price from '{data['company']}'")
+    sentiment = generate_text(f"Analyze sentiment of the news article '{data['news_title']}'")
+    recommendation = generate_text(f"Recommend investment action based on the news article '{data['news_title']}' and the company information '{company_info}'")
+
+    # 추출한 정보를 바탕으로 투자 결정 수행
+    if sentiment == 'positive' and recommendation == 'buy':
+        return f"Buy {data['company']} stock at {stock_price} per share"
+    elif sentiment == 'negative' and recommendation == 'sell':
+        return f"Sell {data['company']} stock at {stock_price} per share"
+    else:
+        return "No action needed"
+
+# 뉴스 검색 함수
+def search_news(keyword):
+    url = f"https://newsapi.org/v2/everything?q={keyword}&apiKey=YOUR_API_KEY"
+    response = requests.get(url).json()
+    articles = response['articles']
+    return articles
+
+# 투자 시뮬레이션 함수
+def run_simulation():
+    # 뉴스 검색
+    keyword = "Apple"
+    articles = search_news(keyword)
+
+    # 각 뉴스에 대해 투자 의사 결정 수행
+    for article in articles:
+        data = {
+            'news_url': article['url'],
+            'news_title': article['title'],
+            'company': 'Apple Inc.'
+        }
+        decision = make_decision(data)
+        print(decision)
+
+if __name__ == '__main__':
+    run_simulation()

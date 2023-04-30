@@ -1,0 +1,3 @@
+#searchForm > section > div > div.btn-group.type-bt > a.btn-sprite.type-00.vmiddle.xls-btn
+
+<a href="#" title="EXCEL" class="btn-sprite type-00 vmiddle xls-btn" onclick="fnDownload(); return false;"><span>EXCEL</span></a>
