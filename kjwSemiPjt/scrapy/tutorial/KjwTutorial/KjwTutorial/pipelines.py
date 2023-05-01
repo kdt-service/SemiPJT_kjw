@@ -12,7 +12,7 @@ from itemadapter import ItemAdapter
 
 class KjwtutorialPipeline(object):
     def __init__(self):
-        self.file = open('ResultOut/movies.csv', 'wb')
+        self.file = open('KjwTutorial/FileHouse/movies_2.csv', 'wb')
         #self.exporter = CsvItemExporter(self.file, encoding='utf-8')  
                        # encoding='utf-8'를 생략하면 encoding=None으로 처리됨
         self.exporter = CsvItemExporter(self.file)
