@@ -1,0 +1,1860 @@
+
+https://docs.scrapy.org/en/latest/intro/tutorial.html#creating-a-project 에서 가이드해준대로
+
+' scrapy startproject <프로젝트명> ' 을  VSCode 터미널 명령프롬프트에서 실행하여 아래와 같은 디렉토리
+구조의 ' 프로젝트 '를 만든다.  프로젝트 이름을 ' CrawlStockInfo ' 로 지었다.
+
+
+
+CrawlStockInfo/
+    scrapy.cfg            # deploy configuration file
+
+    CrawlStockInfo/             # project's Python module, you'll import your code from here
+        __init__.py
+
+        items.py          # project items definition file
+
+        middlewares.py    # project middlewares file
+
+        pipelines.py      # project pipelines file
+
+        settings.py       # project settings file
+
+        spiders/          # a directory where you'll later put your spiders
+            __init__.py
+	    StockCode.py
+	    StockInfo.py
+※CrawlStockInfo디레토리의 __init__.py파일과
+Spiders디렉토리의 __init__.py파일의 역할과 의미는 무엇입니까?  왜 필요한가요?
+ChatGPT
+CrawlStockInfo 디렉토리의 __init__.py 파일과 Spiders 디렉토리의 __init__.py 파일은 파이썬의 패키지(package)를 정의하기 위한 파일입니다.
+
+패키지란 여러 모듈을 모아놓은 것을 말하며, 패키지 안에는 또 다른 패키지나 모듈이 들어갈 수 있습니다. 이러한 패키지를 import하여 다른 파일에서 사용할 수 있습니다.
+
+__init__.py 파일은 해당 디렉토리가 패키지임을 알리기 위한 용도로 사용됩니다. 디렉토리 안에 __init__.py 파일이 없으면 해당 디렉토리는 패키지로 간주되지 않습니다.
+
+따라서 CrawlStockInfo 디렉토리의 __init__.py 파일과 Spiders 디렉토리의 __init__.py 파일이 필요한 것입니다.
+
+
+
+
+
+User
+패키지를 import하여 다른 파일에서 사용하기 위해서 __init__.py파일을 만든것인가요?  __init__.py파일안에는 코딩이 없어도 만들어 놓아야 하는것인가요?
+ChatGPT
+예, 패키지를 import하여 다른 파일에서 사용하기 위해서는 해당 패키지의 위치에 __init__.py 파일이 있어야 합니다. 이 파일은 일반적으로 비어있는 상태로 생성합니다.
+
+__init__.py 파일은 패키지로서 동작하기 위해 파이썬 인터프리터가 해당 디렉토리를 패키지로 인식하도록 합니다. 이 파일이 없다면, 해당 디렉토리는 패키지로 간주되지 않습니다. 따라서, 다른 모듈에서 패키지를 import하는 것이 불가능합니다.
+
+따라서, 모든 패키지 디렉토리에는 __init__.py 파일이 있어야 합니다. 이 파일은 패키지의 동작과 설정에 대한 초기화 코드를 포함할 수도 있습니다.
+
+
+
+
+
+User
+그러면, spiders디렉토리에 __init__.py파일을 만든 것도 spiders를 패키지로 설정하기 위해서입니까? 
+ChatGPT
+맞습니다. spiders 디렉토리에 __init__.py 파일을 만든 것은 spiders를 하나의 패키지로 인식하기 위함입니다. 이 파일은 비어있어도 상관없습니다. 단순히 디렉토리를 패키지로 인식시키기 위한 역할을 합니다.
+
+
+
+
+
+User
+디렉토리를 패키지로 인식시키면 다른 파일에서 어떻게 사용할 수 있습니까? 구체적인 예시를 코딩을 통해 보여주십시오.
+ChatGPT
+예를 들어, CrawlStockInfo 패키지 내에 spiders 패키지가 있고, 그 안에 StockCode.py 스파이더 파일이 있다고 가정해 보겠습니다.
+
+이때, StockCode.py 파일 안에서는 다음과 같이 해당 패키지의 파일을 import 할 수 있습니다.
+
+python
+Copy code
+from CrawlStockInfo.spiders.StockInfo import StockInfoSpider
+위 코드는 StockCode.py 파일에서 CrawlStockInfo 패키지의 spiders 패키지 안에 있는 StockInfo.py 파일 안에 있는 StockInfoSpider 클래스를 import하는 예시입니다.
+
+또한, 같은 패키지 안에 있는 파일끼리는 다음과 같이 상대 경로를 이용하여 import할 수 있습니다.
+
+python
+Copy code
+from .StockInfo import StockInfoSpider
+위 코드는 StockCode.py 파일에서 같은 패키지 안에 있는 StockInfo.py 파일 안에 있는 StockInfoSpider 클래스를 import하는 예시입니다. 여기서 .은 현재 패키지를 의미합니다.
+
+
+
+
+
+
+
+		
+
+
+※StockCode.py에 코딩할 크롤링 내용
+->크롤링할 대상 사이트
+https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage
+->크롤링할 요소 (위 대상 사이트를 열어놓고, F12키를 눌러서 element 선택하여 copy)
+<a href="#" title="EXCEL" class="btn-sprite type-00 vmiddle xls-btn" onclick="fnDownload(); return false;"><span>EXCEL</span></a>
+->크롤링할 셀레터
+#searchForm > section > div > div.btn-group.type-bt > a.btn-sprite.type-00.vmiddle.xls-btn 
+
+
+※StockCode.py에 코딩할 내용
+import requests
+import pandas as pd
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode'
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+
+    def parse(self, response):
+        # 엑셀 다운로드 링크 추출
+        onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+        url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+        
+        # 엑셀 파일 다운로드
+        r = requests.get(url, allow_redirects=True)
+        open('stockcode.xls', 'wb').write(r.content)
+        
+        # CSV 파일로 변환
+        df = pd.read_excel('stockcode.xls')
+        df.to_csv('stockcode.csv', index=False)
+        
+        # CSV 파일 읽어서 추출
+        with open('stockcode.csv', 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                item = {'code': row['종목코드'], 'name': row['회사명']}
+                yield item
+
+
+※StockInfo.py에 코딩할 크롤링 내용
+->크롤링할 대상 사이트
+https://finance.naver.com/item/main.naver?code=006650
+->크롤링할 요소 (위 대상 사이트를 열어놓고, F12키를 눌러서 element 선택하여 copy)
+<tbody>
+											
+											<tr>
+												<th class="left" scope="row">PER</th>
+												<td class="num">N/A</td>
+												<td class="num noline-right">N/A</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">PBR</th>
+												<td class="num">0.48</td>
+												<td class="num noline-right">0.49</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">PCR</th>
+												<td class="num">-19.65</td>
+												<td class="num noline-right">6.49</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">EV/EBITDA</th>
+												<td class="num">-18.41</td>
+												<td class="num noline-right">7.95</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">EPS</th>
+												<td class="num">-22,931원</td>
+												<td class="num noline-right">-1,397원</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">BPS</th>
+												<td class="num">301,477원</td>
+												<td class="num noline-right">297,156원</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">EBITDA</th>
+												<td class="num">-537.1억원</td>
+												<td class="num noline-right">1,317.4억원</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">현금DPS</th>
+												<td class="num">1,000원</td>
+												<td class="num noline-right">750원</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">현금배당수익률</th>
+												<td class="num">0.69%</td>
+												<td class="num noline-right">0.52%</td>
+											</tr>
+											
+											<tr>
+												<th class="left" scope="row">회계기준</th>
+												<td class="num">연결</td>
+												<td class="num noline-right">연결</td>
+											</tr>
+											
+										</tbody>
+
+->크롤링할 셀레터
+#wrapper > div.fund.fl_le > table
+
+※StockInfo.py에 코딩할 내용
+
+※Items.py 코딩
+※pipelines.py 코딩
+※settings.py 설정
+   - ROBOTSTXT_OBEY = False 로 설정
+   - ITEM_PIPELINES = {
+   "CrawlStockInfo.pipelines.CrawlstockinfoPipeline": 300,
+	}
+
+회사명 = scrapy.Field()
+종목코드 = scrapy.Field()
+업종 = scrapy.Field()
+주요제품 = scrapy.Field()
+상장일 = scrapy.Field()
+결산월 = scrapy.Field()
+대표자명 = scrapy.Field()
+홈페이지 = scrapy.Field()
+지역 = scrapy.Field()
+
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode'
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+    
+    def parse(self, response):
+        #엑셀 다운로드 링크 추출
+        #onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+        #url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+        td = response.css('td')
+        onclick_value = td.css('a::attr(onclick)').get()
+        print(f'#################### onclick_value:  {onclick_value}')
+        #엑셀파일 다운로드
+        r = requests.get(url, allow_redirects=True)
+        file_path_01 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001.xls')
+        open(file_path_01, 'wb').write(r.content)
+        #csv파일로 변환                  #엑셀파일도 pandas의 read_excel()함수를 통해 데이터프레임 만들 수 있지만, 
+                #CSV파일이 엑셀파일보다 용량이 작아서 빠르고 효율적이다.
+        df = pd.read_excel(file_path_01)
+        file_path_02 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001_csv')
+        df.to_csv(file_path_02, index=False)
+        #csv파일만 읽어서 추출
+        with open(file_path_02, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            td = response.css('td')
+            onclick_value = td.css('a::attr(onclick)').get()
+            print(f'############### onclick_value:  {onclick_value}')
+            if onclick_value:
+                url = onclick_value.split("'")[1]
+                for row in reader:
+                    item = CrawlstockinfoItem()
+                    item['회사명'] = row['회사명']
+                    item['종목코드'] = row['종목코드']
+                    item['업종'] = row['업종']
+                    item['주요제품'] = row['주요제품']
+                    item['상장일'] = row['상장일']
+                    item['결산월'] = row['결산월']
+                    item['대표자명'] = row['대표자명']
+                    item['홈페이지'] = row['홈페이지']
+                    item['지역'] = row['지역']
+                    print('#'*20)
+                    print('회사명:  ', item['회사명'])
+                    print('종목코드:  ', item['종목코드'])
+                    print('업종:  ', item['업종'])            
+                    print('#'*20)
+                    yield item
+            else:
+                print(f'############### onclick_value ERROR입니다.:  {onclick_value}')
+                
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode'
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+    
+    def parse(self, response):
+        #엑셀 다운로드 링크 추출
+        td = response.css('td')
+        onclick_value = td.css('a::attr(onclick)').get()
+        print(f'############### onclick_value:  {onclick_value}')
+        if onclick_value:
+            url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+            #엑셀파일 다운로드
+            r = requests.get(url, allow_redirects=True)
+            file_path_01 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001.xls')
+            open(file_path_01, 'wb').write(r.content)
+            #csv파일로 변환  
+            #엑셀파일도 pandas의 read_excel()함수를 통해 데이터프레임 만들 수 있지만, 
+            #CSV파일이 엑셀파일보다 용량이 작아서 빠르고 효율적이다.
+            df = pd.read_excel(file_path_01)
+            file_path_02 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001_csv')
+            df.to_csv(file_path_02, index=False)
+            #csv파일만 읽어서 추출
+            with open(file_path_02, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    item = CrawlstockinfoItem()
+                    item['회사명'] = row['회사명']
+                    item['종목코드'] = row['종목코드']
+                    item['업종'] = row['업종']
+                    item['주요제품'] = row['주요제품']
+                    item['상장일'] = row['상장일']
+                    item['결산월'] = row['결산월']
+                    item['대표자명'] = row['대표자명']
+                    item['홈페이지'] = row['홈페이지']
+                    item['지역'] = row['지역']
+                    print('#'*20)
+                    print('회사명:  ', item['회사명'])
+                    print('종목코드:  ', item['종목코드'])
+                    print('업종:  ', item['업종'])            
+                    print('#'*20)
+                    yield item
+        else:
+            print(f'############### onclick_value ERROR입니다.:  {onclick_value}')
+
+
+def parse(self, response):
+    #엑셀 다운로드 링크 추출
+    onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+    if onclick_value:
+        url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+        #엑셀파일 다운로드
+        r = requests.get(url, allow_redirects=True)
+        file_path_01 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001.xls')
+        open(file_path_01, 'wb').write(r.content)
+        #csv파일로 변환  
+                #엑셀파일도 pandas의 read_excel()함수를 통해 데이터프레임 만들 수 있지만, 
+                #CSV파일이 엑셀파일보다 용량이 작아서 빠르고 효율적이다.
+        df = pd.read_excel(file_path_01)
+        file_path_02 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001_csv')
+        df.to_csv(file_path_02, index=False)
+        #csv파일만 읽어서 추출
+        with open(file_path_02, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            td = response.css('td')
+            onclick_value = td.css('a::attr(onclick)').get()
+            print(f'############### onclick_value:  {onclick_value}')
+            for row in reader:
+                item = CrawlstockinfoItem()
+                item['회사명'] = row['회사명']
+                item['종목코드'] = row['종목코드']
+                item['업종'] = row['업종']
+                item['주요제품'] = row['주요제품']
+                item['상장일'] = row['상장일']
+                item['결산월'] = row['결산월']
+                item['대표자명'] = row['대표자명']
+                item['홈페이지'] = row['홈페이지']
+                item['지역'] = row['지역']
+                print('#'*20)
+                print('회사명:  ', item['회사명'])
+                print('종목코드:  ', item['종목코드'])
+                print('업종:  ', item['업종'])            
+                print('#'*20)
+                yield item
+    else:
+        print(f'############### onclick_value ERROR입니다.:  {onclick_value}')
+
+
+def parse(self, response):
+    #엑셀 다운로드 링크 추출
+    onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+    if onclick_value:
+        url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+        #엑셀파일 다운로드
+        r = requests.get(url, allow_redirects=True)
+        file_path_01 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001.xls')
+        open(file_path_01, 'wb').write(r.content)
+        #csv파일로 변환  
+                #엑셀파일도 pandas의 read_excel()함수를 통해 데이터프레임 만들 수 있지만, 
+                #CSV파일이 엑셀파일보다 용량이 작아서 빠르고 효율적이다.
+        df = pd.read_excel(file_path_01)
+        file_path_02 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001_csv')
+        df.to_csv(file_path_02, index=False)
+        #csv파일만 읽어서 추출
+        with open(file_path_02, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            td = response.css('td')
+            onclick_value = td.css('a::attr(onclick)').get()
+            print(f'############### onclick_value:  {onclick_value}')
+            for row in reader:
+                item = CrawlstockinfoItem()
+                item['회사명'] = row['회사명']
+                item['종목코드'] = row['종목코드']
+                item['업종'] = row['업종']
+                item['주요제품'] = row['주요제품']
+                item['상장일'] = row['상장일']
+                item['결산월'] = row['결산월']
+                item['대표자명'] = row['대표자명']
+                item['홈페이지'] = row['홈페이지']
+                item['지역'] = row['지역']
+                print('#'*20)
+                print('회사명:  ', item['회사명'])
+                print('종목코드:  ', item['종목코드'])
+                print('업종:  ', item['업종'])            
+                print('#'*20)
+                yield item
+    else:
+        print(f'############### onclick_value ERROR입니다.:  {onclick_value}')
+                    
+            
+        
+        https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage#
+	https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage
+	https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage#
+        document.querySelector("#searchForm > section > div > div.btn-group.type-bt > a.btn-sprite.type-00.vmiddle.xls-btn")
+        <a href="#" title="EXCEL" class="btn-sprite type-00 vmiddle xls-btn" onclick="fnDownload(); return false;"><span>EXCEL</span></a> 
+	#searchForm > section > div > div.btn-group.type-bt > a.btn-sprite.type-00.vmiddle.xls-btn
+        
+import requests
+import scrapy
+
+class ExcelDownloadSpider(scrapy.Spider):
+    name = 'exceldownload'
+    start_urls = ['https://example.com/page-with-excel-download']
+
+    def parse(self, response):
+        onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+        excel_url = onclick_value.split("('")[1].split("')")[0]
+        excel_file = requests.get(excel_url)
+        with open('file.xlsx', 'wb') as f:
+            f.write(excel_file.content)
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode'
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+    
+    def parse(self, response):
+        #엑셀 다운로드 링크 추출
+        onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+        if onclick_value:
+            url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+            #엑셀파일 다운로드
+            r = requests.get(url, allow_redirects=True)
+            file_path_01 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001.xls')
+            open(file_path_01, 'wb').write(r.content)
+            #csv파일로 변환                  
+                #엑셀파일도 pandas의 read_excel()함수를 통해 데이터프레임 만들 수 있지만, 
+                #CSV파일이 엑셀파일보다 용량이 작아서 빠르고 효율적이다.
+            df = pd.read_excel(file_path_01)
+            file_path_02 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001_csv')
+            df.to_csv(file_path_02, index=False)
+            #csv파일만 읽어서 추출
+            with open(file_path_02, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    item = CrawlstockinfoItem()
+                    item['회사명'] = row['회사명']
+                    item['종목코드'] = row['종목코드']
+                    item['업종'] = row['업종']
+                    item['주요제품'] = row['주요제품']
+                    item['상장일'] = row['상장일']
+                    item['결산월'] = row['결산월']
+                    item['대표자명'] = row['대표자명']
+                    item['홈페이지'] = row['홈페이지']
+                    item['지역'] = row['지역']
+                    print('#'*20)
+                    print('회사명:  ', item['회사명'])
+                    print('종목코드:  ', item['종목코드'])
+                    print('업종:  ', item['업종'])            
+                    print('#'*20)
+                    yield item
+        else:
+            print('엑셀 다운로드 링크가 존재하지 않습니다.')
+
+
+PS D:\MultiCampus\semi_pjt_kjw> D:/MCP/Anaconda3/Scripts/activate
+PS D:\MultiCampus\semi_pjt_kjw> conda activate study
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+If using 'conda activate' from a batch script, change your
+invocation to 'CALL conda.bat activate'.
+
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+  - cmd.exe
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+
+PS D:\MultiCampus\semi_pjt_kjw> CD D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo
+PS D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo> scrapy crawl stockcode
+2023-05-02 09:38:50 [scrapy.utils.log] INFO: Scrapy 2.6.2 started (bot: CrawlStockInfo)
+2023-05-02 09:38:50 [scrapy.utils.log] INFO: Versions: lxml 4.9.1.0, libxml2 2.9.14, cssselect 1.1.0, parsel 1.6.0, w3lib 1.21.0, Twisted 22.2.0, Python 3.9.13 (main, Aug 25 2022, 23:51:50) [MSC v.1916 64 bit (AMD64)], pyOpenSSL 22.0.0 (OpenSSL 1.1.1q  5 Jul 2022), cryptography 37.0.1, Platform Windows-10-10.0.19041-SP0
+2023-05-02 09:38:50 [scrapy.crawler] INFO: Overridden settings:
+{'BOT_NAME': 'CrawlStockInfo',
+ 'FEED_EXPORT_ENCODING': 'utf-8',
+ 'NEWSPIDER_MODULE': 'CrawlStockInfo.spiders',
+ 'SPIDER_MODULES': ['CrawlStockInfo.spiders'],
+ 'TWISTED_REACTOR': 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'}
+2023-05-02 09:38:50 [asyncio] DEBUG: Using selector: SelectSelector
+2023-05-02 09:38:50 [scrapy.utils.log] DEBUG: Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor
+2023-05-02 09:38:50 [scrapy.utils.log] DEBUG: Using asyncio event loop: asyncio.windows_events._WindowsSelectorEventLoop
+2023-05-02 09:38:51 [scrapy.extensions.telnet] INFO: Telnet Password: 8236785c10fb9f7a
+2023-05-02 09:38:51 [scrapy.middleware] INFO: Enabled extensions:
+['scrapy.extensions.corestats.CoreStats',
+ 'scrapy.extensions.telnet.TelnetConsole',
+ 'scrapy.extensions.logstats.LogStats']
+2023-05-02 09:38:54 [scrapy.middleware] INFO: Enabled downloader middlewares:
+['scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware',
+ 'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware',
+ 'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware',
+ 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware',
+ 'scrapy.downloadermiddlewares.retry.RetryMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware',
+ 'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware',
+ 'scrapy.downloadermiddlewares.cookies.CookiesMiddleware',
+ 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware',
+ 'scrapy.downloadermiddlewares.stats.DownloaderStats']
+2023-05-02 09:38:55 [scrapy.middleware] INFO: Enabled spider middlewares:
+['scrapy.spidermiddlewares.httperror.HttpErrorMiddleware',
+ 'scrapy.spidermiddlewares.offsite.OffsiteMiddleware',
+ 'scrapy.spidermiddlewares.referer.RefererMiddleware',
+ 'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware',
+ 'scrapy.spidermiddlewares.depth.DepthMiddleware']
+2023-05-02 09:38:55 [scrapy.middleware] INFO: Enabled item pipelines:
+['CrawlStockInfo.pipelines.CrawlstockinfoPipeline']
+2023-05-02 09:38:55 [scrapy.core.engine] INFO: Spider opened
+2023-05-02 09:38:56 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+2023-05-02 09:38:56 [scrapy.extensions.telnet] INFO: Telnet console listening on 127.0.0.1:6023
+2023-05-02 09:38:57 [filelock] DEBUG: Attempting to acquire lock 2813959146032 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:38:57 [filelock] DEBUG: Lock 2813959146032 acquired on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:38:57 [filelock] DEBUG: Attempting to acquire lock 2813959578864 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:38:57 [filelock] DEBUG: Lock 2813959578864 acquired on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:38:57 [filelock] DEBUG: Attempting to release lock 2813959578864 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:38:57 [filelock] DEBUG: Lock 2813959578864 released on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:38:57 [filelock] DEBUG: Attempting to release lock 2813959146032 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:38:57 [filelock] DEBUG: Lock 2813959146032 released on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:38:57 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage> (referer: None)
+#################### onclick_value:  fnFindCorpName2(); return false;
+2023-05-02 09:38:57 [scrapy.core.scraper] ERROR: Spider error processing <GET https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage> (referer: None)
+Traceback (most recent call last):
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\defer.py", line 132, in iter_errback
+    yield next(it)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\python.py", line 354, in __next__
+    return next(self.data)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\python.py", line 354, in __next__
+    return next(self.data)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\offsite.py", line 29, in process_spider_output
+    for x in result:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\referer.py", line 342, in <genexpr>
+    return (_set_referer(r) for r in result or ())
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\urllength.py", line 40, in <genexpr>
+    return (r for r in result or () if _filter(r))
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\depth.py", line 58, in <genexpr>
+    return (r for r in result or () if _filter(r))
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo\spiders\StockCode.py", line 20, in parse    url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+IndexError: list index out of range
+2023-05-02 09:38:57 [scrapy.core.engine] INFO: Closing spider (finished)
+2023-05-02 09:38:57 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+{'downloader/request_bytes': 261,
+ 'downloader/request_count': 1,
+ 'downloader/request_method_count/GET': 1,
+ 'downloader/response_bytes': 15682,
+ 'downloader/response_count': 1,
+ 'downloader/response_status_count/200': 1,
+ 'elapsed_time_seconds': 0.897037,
+ 'finish_reason': 'finished',
+ 'finish_time': datetime.datetime(2023, 5, 2, 0, 38, 57, 846267),
+ 'httpcompression/response_bytes': 76922,
+ 'httpcompression/response_count': 1,
+ 'log_count/DEBUG': 12,
+ 'log_count/ERROR': 1,
+ 'log_count/INFO': 10,
+ 'response_received_count': 1,
+ 'scheduler/dequeued': 1,
+ 'scheduler/dequeued/memory': 1,
+ 'scheduler/enqueued': 1,
+ 'scheduler/enqueued/memory': 1,
+ 'spider_exceptions/IndexError': 1,
+ 'start_time': datetime.datetime(2023, 5, 2, 0, 38, 56, 949230)}
+2023-05-02 09:38:57 [scrapy.core.engine] INFO: Spider closed (finished)
+
+PS D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo> scrapy crawl stockcode
+2023-05-02 09:45:56 [scrapy.utils.log] INFO: Scrapy 2.6.2 started (bot: CrawlStockInfo)
+2023-05-02 09:45:56 [scrapy.utils.log] INFO: Versions: lxml 4.9.1.0, libxml2 2.9.14, cssselect 1.1.0, parsel 1.6.0, w3lib 1.21.0, Twisted 22.2.0, Python 3.9.13 (main, Aug 25 2022, 23:51:50) [MSC v.1916 64 bit (AMD64)], pyOpenSSL 22.0.0 (OpenSSL 1.1.1q  5 Jul 2022), cryptography 37.0.1, Platform Windows-10-10.0.19041-SP0
+2023-05-02 09:45:56 [scrapy.crawler] INFO: Overridden settings:
+{'BOT_NAME': 'CrawlStockInfo',
+ 'FEED_EXPORT_ENCODING': 'utf-8',
+ 'NEWSPIDER_MODULE': 'CrawlStockInfo.spiders',
+ 'SPIDER_MODULES': ['CrawlStockInfo.spiders'],
+ 'TWISTED_REACTOR': 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'}
+2023-05-02 09:45:56 [asyncio] DEBUG: Using selector: SelectSelector
+2023-05-02 09:45:56 [scrapy.utils.log] DEBUG: Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor
+2023-05-02 09:45:56 [scrapy.utils.log] DEBUG: Using asyncio event loop: asyncio.windows_events._WindowsSelectorEventLoop
+2023-05-02 09:45:56 [scrapy.extensions.telnet] INFO: Telnet Password: 1854ebf553d49ee1
+2023-05-02 09:45:56 [scrapy.middleware] INFO: Enabled extensions:
+['scrapy.extensions.corestats.CoreStats',
+ 'scrapy.extensions.telnet.TelnetConsole',
+ 'scrapy.extensions.logstats.LogStats']
+2023-05-02 09:45:57 [scrapy.middleware] INFO: Enabled downloader middlewares:
+['scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware',
+ 'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware',
+ 'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware',
+ 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware',
+ 'scrapy.downloadermiddlewares.retry.RetryMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware',
+ 'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware',
+ 'scrapy.downloadermiddlewares.cookies.CookiesMiddleware',
+ 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware',
+ 'scrapy.downloadermiddlewares.stats.DownloaderStats']
+2023-05-02 09:45:57 [scrapy.middleware] INFO: Enabled spider middlewares:
+['scrapy.spidermiddlewares.httperror.HttpErrorMiddleware',
+ 'scrapy.spidermiddlewares.offsite.OffsiteMiddleware',
+ 'scrapy.spidermiddlewares.referer.RefererMiddleware',
+ 'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware',
+ 'scrapy.spidermiddlewares.depth.DepthMiddleware']
+2023-05-02 09:45:57 [scrapy.middleware] INFO: Enabled item pipelines:
+['CrawlStockInfo.pipelines.CrawlstockinfoPipeline']
+2023-05-02 09:45:57 [scrapy.core.engine] INFO: Spider opened
+2023-05-02 09:45:58 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+2023-05-02 09:45:58 [scrapy.extensions.telnet] INFO: Telnet console listening on 127.0.0.1:6023
+2023-05-02 09:45:58 [filelock] DEBUG: Attempting to acquire lock 2897777789344 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:45:58 [filelock] DEBUG: Lock 2897777789344 acquired on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:45:58 [filelock] DEBUG: Attempting to acquire lock 2897778234416 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:45:58 [filelock] DEBUG: Lock 2897778234416 acquired on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:45:58 [filelock] DEBUG: Attempting to release lock 2897778234416 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:45:58 [filelock] DEBUG: Lock 2897778234416 released on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:45:58 [filelock] DEBUG: Attempting to release lock 2897777789344 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:45:58 [filelock] DEBUG: Lock 2897777789344 released on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:45:58 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage> (referer: None)
+#################### onclick_value:  fnFindCorpName2(); return false;
+2023-05-02 09:45:58 [scrapy.core.scraper] ERROR: Spider error processing <GET https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage> (referer: None)
+Traceback (most recent call last):
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\defer.py", line 132, in iter_errback
+    yield next(it)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\python.py", line 354, in __next__
+    return next(self.data)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\python.py", line 354, in __next__
+    return next(self.data)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\offsite.py", line 29, in process_spider_output
+    for x in result:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\referer.py", line 342, in <genexpr>
+    return (_set_referer(r) for r in result or ())
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\urllength.py", line 40, in <genexpr>
+    return (r for r in result or () if _filter(r))
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\depth.py", line 58, in <genexpr>
+    return (r for r in result or () if _filter(r))
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo\spiders\StockCode.py", line 20, in parse    url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+IndexError: list index out of range
+2023-05-02 09:45:58 [scrapy.core.engine] INFO: Closing spider (finished)
+2023-05-02 09:45:58 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+{'downloader/request_bytes': 261,
+ 'downloader/request_count': 1,
+ 'downloader/request_method_count/GET': 1,
+ 'downloader/response_bytes': 15682,
+ 'downloader/response_count': 1,
+ 'downloader/response_status_count/200': 1,
+ 'elapsed_time_seconds': 0.609776,
+ 'finish_reason': 'finished',
+ 'finish_time': datetime.datetime(2023, 5, 2, 0, 45, 58, 926191),
+ 'httpcompression/response_bytes': 76922,
+ 'httpcompression/response_count': 1,
+ 'log_count/DEBUG': 12,
+ 'log_count/ERROR': 1,
+ 'log_count/INFO': 10,
+ 'response_received_count': 1,
+ 'scheduler/dequeued': 1,
+ 'scheduler/dequeued/memory': 1,
+ 'scheduler/enqueued': 1,
+ 'scheduler/enqueued/memory': 1,
+ 'spider_exceptions/IndexError': 1,
+ 'start_time': datetime.datetime(2023, 5, 2, 0, 45, 58, 316415)}
+2023-05-02 09:45:58 [scrapy.core.engine] INFO: Spider closed (finished)
+
+
+PS D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo> scrapy crawl stockcode
+2023-05-02 09:49:57 [scrapy.utils.log] INFO: Scrapy 2.6.2 started (bot: CrawlStockInfo)
+2023-05-02 09:49:57 [scrapy.utils.log] INFO: Versions: lxml 4.9.1.0, libxml2 2.9.14, cssselect 1.1.0, parsel 1.6.0, w3lib 1.21.0, Twisted 22.2.0, Python 3.9.13 (main, Aug 25 2022, 23:51:50) [MSC v.1916 64 bit (AMD64)], pyOpenSSL 22.0.0 (OpenSSL 1.1.1q  5 Jul 2022), cryptography 37.0.1, Platform Windows-10-10.0.19041-SP0
+2023-05-02 09:49:57 [scrapy.crawler] INFO: Overridden settings:
+{'BOT_NAME': 'CrawlStockInfo',
+ 'FEED_EXPORT_ENCODING': 'utf-8',
+ 'NEWSPIDER_MODULE': 'CrawlStockInfo.spiders',
+ 'SPIDER_MODULES': ['CrawlStockInfo.spiders'],
+ 'TWISTED_REACTOR': 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'}
+2023-05-02 09:49:57 [asyncio] DEBUG: Using selector: SelectSelector
+2023-05-02 09:49:57 [scrapy.utils.log] DEBUG: Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor
+2023-05-02 09:49:57 [scrapy.utils.log] DEBUG: Using asyncio event loop: asyncio.windows_events._WindowsSelectorEventLoop
+2023-05-02 09:49:58 [scrapy.extensions.telnet] INFO: Telnet Password: 3e9b5d267feaca4e
+2023-05-02 09:49:58 [scrapy.middleware] INFO: Enabled extensions:
+['scrapy.extensions.corestats.CoreStats',
+ 'scrapy.extensions.telnet.TelnetConsole',
+ 'scrapy.extensions.logstats.LogStats']
+2023-05-02 09:49:59 [scrapy.middleware] INFO: Enabled downloader middlewares:
+['scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware',
+ 'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware',
+ 'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware',
+ 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware',
+ 'scrapy.downloadermiddlewares.retry.RetryMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware',
+ 'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware',
+ 'scrapy.downloadermiddlewares.cookies.CookiesMiddleware',
+ 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware',
+ 'scrapy.downloadermiddlewares.stats.DownloaderStats']
+2023-05-02 09:49:59 [scrapy.middleware] INFO: Enabled spider middlewares:
+['scrapy.spidermiddlewares.httperror.HttpErrorMiddleware',
+ 'scrapy.spidermiddlewares.offsite.OffsiteMiddleware',
+ 'scrapy.spidermiddlewares.referer.RefererMiddleware',
+ 'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware',
+ 'scrapy.spidermiddlewares.depth.DepthMiddleware']
+2023-05-02 09:49:59 [scrapy.middleware] INFO: Enabled item pipelines:
+['CrawlStockInfo.pipelines.CrawlstockinfoPipeline']
+2023-05-02 09:49:59 [scrapy.core.engine] INFO: Spider opened
+2023-05-02 09:50:00 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+2023-05-02 09:50:00 [scrapy.extensions.telnet] INFO: Telnet console listening on 127.0.0.1:6023
+2023-05-02 09:50:00 [filelock] DEBUG: Attempting to acquire lock 2159435119008 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:50:00 [filelock] DEBUG: Lock 2159435119008 acquired on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:50:00 [filelock] DEBUG: Attempting to acquire lock 2159435568128 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:50:00 [filelock] DEBUG: Lock 2159435568128 acquired on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:50:00 [filelock] DEBUG: Attempting to release lock 2159435568128 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:50:00 [filelock] DEBUG: Lock 2159435568128 released on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 09:50:00 [filelock] DEBUG: Attempting to release lock 2159435119008 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 09:50:00 [filelock] DEBUG: Lock 2159435119008 released on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+
+2023-05-02 09:50:00 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage> (referer: None)
+
+2023-05-02 09:50:00 [scrapy.core.scraper] ERROR: Spider error processing <GET https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage> (referer: None)
+
+Traceback (most recent call last):
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\defer.py", line 132, in iter_errback
+    yield next(it)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\python.py", line 354, in __next__
+    return next(self.data)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\python.py", line 354, in __next__
+    return next(self.data)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\offsite.py", line 29, in process_spider_output
+    for x in result:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\referer.py", line 342, in <genexpr>
+    return (_set_referer(r) for r in result or ())
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\urllength.py", line 40, in <genexpr>
+    return (r for r in result or () if _filter(r))
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\depth.py", line 58, in <genexpr>
+    return (r for r in result or () if _filter(r))
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo\spiders\StockCode.py", line 20, in parse    
+url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+IndexError: list index out of range
+2023-05-02 09:50:00 [scrapy.core.engine] INFO: Closing spider (finished)
+2023-05-02 09:50:00 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+{'downloader/request_bytes': 261,
+ 'downloader/request_count': 1,
+ 'downloader/request_method_count/GET': 1,
+ 'downloader/response_bytes': 15682,
+ 'downloader/response_count': 1,
+ 'downloader/response_status_count/200': 1,
+ 'elapsed_time_seconds': 0.633646,
+ 'finish_reason': 'finished',
+ 'finish_time': datetime.datetime(2023, 5, 2, 0, 50, 0, 737948),
+ 'httpcompression/response_bytes': 76922,
+ 'httpcompression/response_count': 1,
+ 'log_count/DEBUG': 12,
+ 'log_count/ERROR': 1,
+ 'log_count/INFO': 10,
+ 'response_received_count': 1,
+ 'scheduler/dequeued': 1,
+ 'scheduler/dequeued/memory': 1,
+ 'scheduler/enqueued': 1,
+ 'scheduler/enqueued/memory': 1,
+ 'spider_exceptions/IndexError': 1,
+ 'start_time': datetime.datetime(2023, 5, 2, 0, 50, 0, 104302)}
+2023-05-02 09:50:00 [scrapy.core.engine] INFO: Spider closed (finished)
+PS D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo>
+
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode'
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+    
+    def parse(self, response):
+        #엑셀 다운로드 링크 추출
+        onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+        print(f'첫번째 시도한 onclick_value 값은? {onclick_value}')
+        if onclick_value:
+            url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+            #엑셀파일 다운로드
+            r = requests.get(url, allow_redirects=True)
+            file_path_01 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001.xls')
+            open(file_path_01, 'wb').write(r.content)
+            df = pd.read_excel(file_path_01)
+            file_path_02 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001_csv')
+            df.to_csv(file_path_02, index=False)
+            #csv파일만 읽어서 추출
+            with open(file_path_02, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                td = response.css('td')
+                onclick_value = td.css('a::attr(onclick)').get()
+                print(f'계속 시도한 onclick_value 값은? onclick_value: {onclick_value}')
+                for row in reader:
+                    item = CrawlstockinfoItem()
+                    item['회사명'] = row['회사명']
+                    item['종목코드'] = row['종목코드']
+                    item['업종'] = row['업종']
+                    item['주요제품'] = row['주요제품']
+                    item['상장일'] = row['상장일']
+                    item['결산월'] = row['결산월']
+                    item['대표자명'] = row['대표자명']
+                    item['홈페이지'] = row['홈페이지']
+                    item['지역'] = row['지역']
+                    print('#'*20)
+                    print('회사명:  ', item['회사명'])
+                    print('종목코드:  ', item['종목코드'])
+                    print('업종:  ', item['업종'])            
+                    print('#'*20)
+                    yield item
+                else:
+                    print(f'############### onclick_value ERROR입니다.:  {onclick_value}')
+                
+                    
+PS D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo> scrapy crawl stockcode
+2023-05-02 11:27:58 [scrapy.utils.log] INFO: Scrapy 2.6.2 started (bot: CrawlStockInfo)
+2023-05-02 11:27:59 [scrapy.utils.log] INFO: Versions: lxml 4.9.1.0, libxml2 2.9.14, cssselect 1.1.0, parsel 1.6.0, w3lib 1.21.0, Twisted 22.2.0, Python 3.9.13 (main, Aug 25 2022, 23:51:50) [MSC v.1916 64 bit (AMD64)], pyOpenSSL 22.0.0 (OpenSSL 1.1.1q  5 Jul 2022), cryptography 37.0.1, Platform Windows-10-10.0.19041-SP0
+2023-05-02 11:27:59 [scrapy.crawler] INFO: Overridden settings:
+{'BOT_NAME': 'CrawlStockInfo',
+ 'FEED_EXPORT_ENCODING': 'utf-8',
+ 'NEWSPIDER_MODULE': 'CrawlStockInfo.spiders',
+ 'SPIDER_MODULES': ['CrawlStockInfo.spiders'],
+ 'TWISTED_REACTOR': 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'}
+2023-05-02 11:27:59 [asyncio] DEBUG: Using selector: SelectSelector
+2023-05-02 11:27:59 [scrapy.utils.log] DEBUG: Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor
+2023-05-02 11:27:59 [scrapy.utils.log] DEBUG: Using asyncio event loop: asyncio.windows_events._WindowsSelectorEventLoop
+2023-05-02 11:27:59 [scrapy.extensions.telnet] INFO: Telnet Password: 37e9efb2bbf69fac
+2023-05-02 11:27:59 [scrapy.middleware] INFO: Enabled extensions:
+['scrapy.extensions.corestats.CoreStats',
+ 'scrapy.extensions.telnet.TelnetConsole',
+ 'scrapy.extensions.logstats.LogStats']
+2023-05-02 11:28:00 [scrapy.middleware] INFO: Enabled downloader middlewares:
+['scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware',
+ 'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware',
+ 'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware',
+ 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware',
+ 'scrapy.downloadermiddlewares.retry.RetryMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware',
+ 'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware',
+ 'scrapy.downloadermiddlewares.cookies.CookiesMiddleware',
+ 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware',
+ 'scrapy.downloadermiddlewares.stats.DownloaderStats']
+2023-05-02 11:28:00 [scrapy.middleware] INFO: Enabled spider middlewares:
+['scrapy.spidermiddlewares.httperror.HttpErrorMiddleware',
+ 'scrapy.spidermiddlewares.offsite.OffsiteMiddleware',
+ 'scrapy.spidermiddlewares.referer.RefererMiddleware',
+ 'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware',
+ 'scrapy.spidermiddlewares.depth.DepthMiddleware']
+2023-05-02 11:28:00 [scrapy.middleware] INFO: Enabled item pipelines:
+['CrawlStockInfo.pipelines.CrawlstockinfoPipeline']
+2023-05-02 11:28:00 [scrapy.core.engine] INFO: Spider opened
+2023-05-02 11:28:01 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+2023-05-02 11:28:01 [scrapy.extensions.telnet] INFO: Telnet console listening on 127.0.0.1:6023
+2023-05-02 11:28:01 [filelock] DEBUG: Attempting to acquire lock 2385304876608 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 11:28:01 [filelock] DEBUG: Lock 2385304876608 acquired on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 11:28:01 [filelock] DEBUG: Attempting to acquire lock 2385305338064 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 11:28:01 [filelock] DEBUG: Lock 2385305338064 acquired on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 11:28:01 [filelock] DEBUG: Attempting to release lock 2385305338064 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 11:28:01 [filelock] DEBUG: Lock 2385305338064 released on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/urls\62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+2023-05-02 11:28:01 [filelock] DEBUG: Attempting to release lock 2385304876608 on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 11:28:01 [filelock] DEBUG: Lock 2385304876608 released on D:\MCP\Anaconda3\lib\site-packages\tldextract\.suffix_cache/publicsuffix.org-tlds\de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+2023-05-02 11:28:01 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage> (referer: None)
+
+첫번째 시도한 onclick_value: fnDownload(); return false;
+
+2023-05-02 11:28:01 [scrapy.core.scraper] ERROR: Spider error processing <GET https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage> (referer: None)
+Traceback (most recent call last):
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\defer.py", line 132, in iter_errback
+    yield next(it)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\python.py", line 354, in __next__
+    return next(self.data)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\python.py", line 354, in __next__
+    return next(self.data)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\offsite.py", line 29, in process_spider_output
+    for x in result:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\referer.py", line 342, in <genexpr>
+    return (_set_referer(r) for r in result or ())
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\urllength.py", line 40, in <genexpr>
+    return (r for r in result or () if _filter(r))
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spidermiddlewares\depth.py", line 58, in <genexpr>
+    return (r for r in result or () if _filter(r))
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\core\spidermw.py", line 66, in _evaluate_iterable
+    for r in iterable:
+  File "D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo\spiders\StockCode.py", line 21, in parse    url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+IndexError: list index out of range
+2023-05-02 11:28:01 [scrapy.core.engine] INFO: Closing spider (finished)
+
+2023-05-02 11:28:01 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+{'downloader/request_bytes': 261,
+ 'downloader/request_count': 1,
+ 'downloader/request_method_count/GET': 1,
+ 'downloader/response_bytes': 15682,
+ 'downloader/response_count': 1,
+ 'downloader/response_status_count/200': 1,
+ 'elapsed_time_seconds': 0.686942,
+ 'finish_reason': 'finished',
+ 'finish_time': datetime.datetime(2023, 5, 2, 2, 28, 1, 984036),
+ 'httpcompression/response_bytes': 76922,
+ 'httpcompression/response_count': 1,
+ 'log_count/DEBUG': 12,
+ 'log_count/ERROR': 1,
+ 'log_count/INFO': 10,
+ 'response_received_count': 1,
+ 'scheduler/dequeued': 1,
+ 'scheduler/dequeued/memory': 1,
+ 'scheduler/enqueued': 1,
+ 'scheduler/enqueued/memory': 1,
+ 'spider_exceptions/IndexError': 1,
+ 'start_time': datetime.datetime(2023, 5, 2, 2, 28, 1, 297094)}
+2023-05-02 11:28:01 [scrapy.core.engine] INFO: Spider closed (finished)    
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode'
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+    
+    def parse(self, response):
+        #엑셀 다운로드 링크 추출
+        onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+        print(f'\n\n첫번째 시도한 onclick_value: {onclick_value}\n\n')
+        if onclick_value:
+            url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+            #엑셀파일 다운로드
+            r = requests.get(url, allow_redirects=True)
+            file_path_01 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001.xls')
+            open(file_path_01, 'wb').write(r.content)
+            df = pd.read_excel(file_path_01)
+            file_path_02 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001_csv')
+            df.to_csv(file_path_02, index=False)
+            #csv파일만 읽어서 추출
+            with open(file_path_02, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                td = response.css('td')
+                onclick_value = td.css('a::attr(onclick)').get()
+                print(f'\n with open문에서 시도한 onclick_value: {onclick_value} \n')
+                for row in reader:
+                    item = CrawlstockinfoItem()
+                    item['회사명'] = row['회사명']
+                    item['종목코드'] = row['종목코드']
+                    item['업종'] = row['업종']
+                    item['주요제품'] = row['주요제품']
+                    item['상장일'] = row['상장일']
+                    item['결산월'] = row['결산월']
+                    item['대표자명'] = row['대표자명']
+                    item['홈페이지'] = row['홈페이지']
+                    item['지역'] = row['지역']
+                    print('#'*20)
+                    print('회사명:  ', item['회사명'])
+                    print('종목코드:  ', item['종목코드'])
+                    print('업종:  ', item['업종'])            
+                    print('#'*20)
+                    yield item
+                else:
+                    print(f'############### onclick_value ERROR입니다.:  {onclick_value}')
+
+def parse(self, response):
+    #엑셀 다운로드 링크 추출
+    onclick_value = response.css('a.xls-btn::attr(onclick)').get()
+    print(f'\n\n첫번째 시도한 onclick_value: {onclick_value}\n\n')
+
+    if onclick_value:
+        url = 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])
+		
+        #엑셀파일 다운로드
+        r = requests.get(url, allow_redirects=True)
+        file_path_01 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001.xls')
+        open(file_path_01, 'wb').write(r.content)
+        df = pd.read_excel(file_path_01)
+        file_path_02 = os.path.join(os.getcwd(), 'CrawlStockInfo\\FileHouseStock', 'stockcode_001_csv')
+        df.to_csv(file_path_02, index=False)
+        #csv파일만 읽어서 추출
+        with open(file_path_02, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            td = response.css('td')
+            onclick_value = td.css('a::attr(onclick)').get()
+            print(f'\n with open문에서 시도한 onclick_value: {onclick_value} \n')
+            for row in reader:
+                item = CrawlstockinfoItem()
+                item['회사명'] = row['회사명']
+                item['종목코드'] = row['종목코드']
+                item['업종'] = row['업종']
+                item['주요제품'] = row['주요제품']
+                item['상장일'] = row['상장일']
+                item['결산월'] = row['결산월']
+                item['대표자명'] = row['대표자명']
+                item['홈페이지'] = row['홈페이지']
+                item['지역'] = row['지역']
+                print('#'*20)
+                print('회사명:  ', item['회사명'])
+                print('종목코드:  ', item['종목코드'])
+                print('업종:  ', item['업종'])            
+                print('#'*20)
+                yield item
+        else:
+            print(f'############### onclick_value ERROR입니다.:  {onclick_value}')
+
+https://kind.krx.co.kr/common/downloadExcel.do?name=download&url=
+ 'https://kind.krx.co.kr/common/downloadExcel.do?name=download&url={}'.format(onclick_value.split("'")[1])                
+                    
+            
+        
+import requests
+import pandas as pd
+import scrapy
+from scrapy.http import FormRequest
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+
+# 1. 상장법인목록조회 버튼 클릭 후 들어온 새 창 URL
+url = 'https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage'
+
+# 2. POST 요청 데이터
+data = {
+    'currentPage': '1',
+    'pageSize': '100',
+    'searchType': '13',
+    'industry': '',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all'
+}
+
+# 3. POST 요청 보내기
+response = requests.post(url, data=data)
+
+# 4. 응답 데이터 JSON 파싱 후 DataFrame으로 변환
+data = response.json()
+df = pd.concat([pd.DataFrame(d) for d in data.values()])
+
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode'
+    allowed_domains = ['kind.krx.co.kr']
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+
+    def parse(self, response):
+        # 새 창을 열기 위해 JavaScript 코드를 추출
+        open_popup_js = response.css('a.btn2::attr(onclick)').extract_first()
+        # JavaScript 코드에서 호출하는 URL 추출
+        url = open_popup_js.split("'")[1]
+
+        # 새 창에서 보여줄 내용을 POST로 요청
+        yield FormRequest(
+            url,
+            method='POST',
+            formdata={
+                'mktTpCd': 'ALL',      # 시장 유형: 전체
+                'searchText': '',      # 검색어: 빈 문자열
+                'currentPage': '1',    # 현재 페이지: 1
+                'pageSize': '5000'     # 페이지당 항목 수: 5000
+            },
+            callback=self.parse_table
+        )
+
+    def parse_table(self, response):
+        # 페이지 내에 있는 table 태그를 추출하여 pandas DataFrame으로 읽기
+        dfs = pd.read_html(response.text)
+        df = dfs[0]
+        
+        # 필요한 컬럼만 선택하여 item으로 저장 및 반환
+        for row in df.itertuples():
+            item = CrawlstockinfoItem(
+                회사명=row[2],
+                종목코드=row[3],
+                업종=row[4],
+                주요제품=row[5],
+                상장일=row[6],
+                결산월=row[7],
+                대표자명=row[8],
+                홈페이지=row[9],
+                지역=row[10]
+            )
+            yield item
+
+
+PS D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo> scrapy crawl stockcode_02
+Traceback (most recent call last):
+  File "D:\MCP\Anaconda3\lib\site-packages\requests\models.py", line 971, in json
+    return complexjson.loads(self.text, **kwargs)
+  File "D:\MCP\Anaconda3\lib\json\__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+  File "D:\MCP\Anaconda3\lib\json\decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "D:\MCP\Anaconda3\lib\json\decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 8 column 1 (char 14)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\MCP\Anaconda3\Scripts\scrapy-script.py", line 10, in <module>
+    sys.exit(execute())
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\cmdline.py", line 153, in execute
+    cmd.crawler_process = CrawlerProcess(settings)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\crawler.py", line 289, in __init__
+    super().__init__(settings)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\crawler.py", line 166, in __init__
+    self.spider_loader = self._get_spider_loader(settings)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\crawler.py", line 160, in _get_spider_loader
+    return loader_cls.from_settings(settings.frozencopy())
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spiderloader.py", line 67, in from_settings
+    return cls(settings)
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spiderloader.py", line 24, in __init__
+    self._load_all_spiders()
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\spiderloader.py", line 51, in _load_all_spiders
+    for module in walk_modules(name):
+  File "D:\MCP\Anaconda3\lib\site-packages\scrapy\utils\misc.py", line 88, in walk_modules
+    submod = import_module(fullpath)
+  File "D:\MCP\Anaconda3\lib\importlib\__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo\spiders\StockCode_02.py", line 26, in <module>
+    data = response.json()
+  File "D:\MCP\Anaconda3\lib\site-packages\requests\models.py", line 975, in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+requests.exceptions.JSONDecodeError: Expecting value: line 8 column 1 (char 14)
+
+import scrapy
+import pandas as pd
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode_03'
+    allowed_domains = ['kind.krx.co.kr']
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+
+    def parse(self, response):
+        # 새창을 열기 위해 JavaScript 코드를 추출
+        open_popup_js = response.css('a.btn2::attr(onclick)').extract_first()
+        # JavaScript 코드에서 호출하는 URL 추출
+        url = open_popup_js.split("'")[1]
+
+        # 새창에서 보여줄 내용을 POST로 요청
+        yield scrapy.FormRequest(
+            url,
+            method='POST',
+            formdata={
+                'mktTpCd': 'ALL',
+                'searchText': '',
+                'currentPage': '1',
+                'pageSize': '5000'
+            },
+            callback=self.parse_table
+        )
+
+    def parse_table(self, response):
+        # 페이지 내 table 태그를 추출하여 pandas DataFrame으로 읽기
+        dfs = pd.read_html(response.text)
+        df = dfs[0]
+        # 필요 컬럼만 선택하여 item으로 저장 및 반환
+        for row in df.itertuples():
+            item = CrawlstockinfoItem()
+            item['회사명'] = row[2]
+            item['종목코드'] = row[3]
+            item['업종'] = row[4]
+            item['주요제품'] = row[5]
+            item['상장일'] = row[6]
+            item['결산월'] = row[7]
+            item['대표자명'] = row[8]
+            item['홈페이지'] = row[9]
+            item['지역'] = row[10]
+            print('#'*20)
+            print('회사명:  ', item['회사명'])
+            print('종목코드:  ', item['종목코드'])
+            print('업종:  ', item['업종'])
+            print('#'*20)
+            yield item
+
+        
+# 숫자 출력 형식을 변경하는 코드
+pd.options.display.float_format = '{:.0f}'.format
+         
+import requests
+import pandas as pd
+
+# 메인 페이지 URL
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+
+# 메인 페이지에 POST 요청을 보내서 팝업 창 URL 추출
+main_params = {
+    'method': 'loadInitPage'
+}
+main_response = requests.post(main_url, data=main_params)
+popup_url = main_response.url
+
+# 팝업 창 URL에서 페이지 이동을 위한 데이터 추출
+popup_response = requests.get(popup_url)
+popup_params = {
+    'method': 'download',
+    'searchType': '13',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all',
+    'marketType': 'ALL',
+    'pageIndex': 1,
+    'pageSize': 3000,
+}
+
+# 숫자 출력 형식을 변경하는 코드
+pd.options.display.float_format = '{:.0f}'.format
+
+# 첫 페이지부터 마지막 페이지까지 데이터 수집
+results = pd.DataFrame()
+while True:
+    # 페이지 이동을 위한 데이터를 이용하여 POST 요청 보내기
+    popup_response = requests.post(popup_url, data=popup_params)
+    temp_df = pd.read_html(popup_response.text)[0]
+    results = pd.concat([results, temp_df], ignore_index=True)
+    print(f'\n 확인을 위한 출력 response.text :\n{results}')
+
+    # 다음 페이지로 이동하기 위해 pageIndex 값을 1 증가시킴
+    popup_params['pageIndex'] += 1
+    
+    # 마지막 페이지인지 확인
+    if len(temp_df) < popup_params['pageSize']:
+        break
+
+#결과데이터를 csv화일로 출력
+results.to_csv('./stockCodeList_test.csv', index=False)
+
+
+        
+        
+        
+    
+import requests
+import pandas as pd
+
+# 메인 페이지 URL
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+
+# 메인 페이지에 POST 요청을 보내서 팝업 창 URL 추출
+main_params = {
+    'method': 'loadInitPage'
+}
+main_response = requests.post(main_url, data=main_params)
+popup_url = main_response.url
+
+# 팝업 창 URL에서 페이지 이동을 위한 데이터 추출
+popup_response = requests.get(popup_url)
+popup_params = {
+    'method': 'download',
+    'searchType': '13',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all',
+    'marketType': 'ALL',
+    'pageIndex': 1,
+    'pageSize': 3000,
+}
+
+results = pd.DataFrame()
+while True:
+    # 페이지 이동을 위한 데이터를 이용하여 POST 요청 보내기
+    popup_response = requests.post(popup_url, data=popup_params)
+
+    temp_df = pd.read_html(popup_response.text)[0]
+
+    results = pd.concat([results, temp_df], ignore_index=True)
+
+    # 다음 페이지로 이동하기 위해 pageIndex 값을 1 증가시킴
+    popup_params['pageIndex'] += 1
+    
+    # 마지막 페이지인지 확인
+    if len(temp_df) < popup_params['pageSize']:
+        break
+
+#결과데이터를 csv화일로 출력
+results.to_csv('./stockCodeList_test_010.csv', index=False)
+
+
+import requests
+import pandas as pd
+import os
+
+# 메인 페이지 URL
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+
+# 메인 페이지에 POST 요청을 보내서 팝업 창 URL 추출
+main_params = {
+    'method': 'loadInitPage'
+}
+main_response = requests.post(main_url, data=main_params)
+popup_url = main_response.url
+
+# 팝업 창 URL에서 페이지 이동을 위한 데이터 추출
+popup_response = requests.get(popup_url)
+popup_params = {
+    'method': 'download',
+    'searchType': '13',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all',
+    'marketType': 'ALL',
+    'pageIndex': 1,
+    'pageSize': 3000,
+}
+
+# 숫자(종목코드) 출력 형식을 변경하는 코드
+#pd.option.display.float_format = '{:.of}'.format
+pd.set_option('float_format', '{:2f}'.format)
+
+
+# 첫 페이지부터 마지막 페이지까지 데이터 수집
+results = pd.DataFrame()
+while True:
+    # 페이지 이동을 위한 데이터를 이용하여 POST 요청 보내기
+    popup_response = requests.post(popup_url, data=popup_params)
+    #print(f'\n 출력 popup_response는 \n {popup_response.text}\n')
+    temp_df = pd.read_html(popup_response.text)[0]
+    print(f'\n 출력 temp_df는 \n {temp_df}\n')
+    temp_df['종목코드'] = temp_df['종목코드'].astype(str) # 쑷자앞에 0을 유지시키기 위해서 타입을 str(문자열)로 변경시킨다.
+    results = pd.concat([results, temp_df], ignore_index=True)
+    #print(f'\n 확인을 위한 출력 response.text :\n{results}')
+    # 다음 페이지로 이동하기 위해 pageIndex 값을 1 증가시킴
+    popup_params['pageIndex'] += 1
+    
+    # 마지막 페이지인지 확인
+    if len(temp_df) < popup_params['pageSize']:
+        break
+
+#결과데이터를 csv화일로 출력
+file_path = os.path.join(os.getcwd(), 'CrawlStockInfo','stockCodeList_test_016.csv')
+results.to_csv(file_path, index=False)
+
+
+import requests
+import pandas as pd
+import os
+
+# 메인 페이지 URL
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+
+# 메인 페이지에 POST 요청을 보내서 팝업 창 URL 추출
+main_params = {
+    'method': 'loadInitPage'
+}
+main_response = requests.post(main_url, data=main_params)
+popup_url = main_response.url
+
+# 팝업 창 URL에서 페이지 이동을 위한 데이터 추출
+popup_response = requests.get(popup_url)
+popup_params = {
+    'method': 'download',
+    'searchType': '13',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all',
+    'marketType': 'ALL',
+    'pageIndex': 1,
+    'pageSize': 3000,
+}
+
+
+# 첫 페이지부터 마지막 페이지까지 데이터 수집
+results = pd.DataFrame()
+while True:
+    # 페이지 이동을 위한 데이터를 이용하여 POST 요청 보내기
+    popup_response = requests.post(popup_url, data=popup_params)
+    #print(f'\n 출력 popup_response는 \n {popup_response.text}\n')
+    temp_df = pd.read_html(popup_response.text, converters={'종목코드': str})[0]
+    #converters={'종목코드': str}을 read_html()메소드의 매개변수로 추가했다. 종목코드에서 숫자앞의 0이 유지될 수 있도록 추가한 것이다.
+    print(f'\n 출력 temp_df는 \n {temp_df}\n')
+    temp_df['종목코드'] = temp_df['종목코드'].astype(str) # 쑷자앞에 0을 유지시키기 위해서 타입을 str(문자열)로 변경시킨다.
+    results = pd.concat([results, temp_df], ignore_index=True)
+    #print(f'\n 확인을 위한 출력 response.text :\n{results}')
+    # 다음 페이지로 이동하기 위해 pageIndex 값을 1 증가시킴
+    popup_params['pageIndex'] += 1
+    
+    # 마지막 페이지인지 확인
+    if len(temp_df) < popup_params['pageSize']:
+        break
+
+#결과데이터를 csv화일로 출력
+print(f'\n 최종확인 출력 results 최종출력은 \n {results}\n')
+file_path = os.path.join(os.getcwd(), 'CrawlStockInfo','stockCodeList_test_018.csv')
+results.to_csv(file_path, index=False)
+
+
+
+
+temp_df['종목코드'] = temp_df['종목코드'].apply(lambda x: format(int(x), '06'))
+temp_df['종목코드'] = temp_df['종목코드'].apply(lambda x: f'="{x:0>6}"')
+
+
+import requests
+import pandas as pd
+import os
+
+# 메인 페이지 URL
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+
+# 메인 페이지에 POST 요청을 보내서 팝업 창 URL 추출
+main_params = {
+    'method': 'loadInitPage'
+}
+main_response = requests.post(main_url, data=main_params)
+popup_url = main_response.url
+
+# 팝업 창 URL에서 페이지 이동을 위한 데이터 추출
+popup_response = requests.get(popup_url)
+popup_params = {
+    'method': 'download',
+    'searchType': '13',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all',
+    'marketType': 'ALL',
+    'pageIndex': 1,
+    'pageSize': 3000,
+}
+
+
+# 첫 페이지부터 마지막 페이지까지 데이터 수집
+results = pd.DataFrame()
+while True:
+    # 페이지 이동을 위한 데이터를 이용하여 POST 요청 보내기
+    popup_response = requests.post(popup_url, data=popup_params)
+    #print(f'\n 출력 popup_response는 \n {popup_response.text}\n')
+    temp_df = pd.read_html(popup_response.text, converters={'종목코드': str})[0]
+    #converters={'종목코드': str}을 read_html()메소드의 매개변수로 추가했다. 종목코드에서 숫자앞의 0이 유지될 수 있도록 추가한 것이다.
+    print(f'\n 출력 temp_df는 \n {temp_df}\n')
+    temp_df['종목코드'] = temp_df['종목코드'].astype(str) # 쑷자앞에 0을 유지시키기 위해서 타입을 str(문자열)로 변경시킨다.
+    results = pd.concat([results, temp_df], ignore_index=True)
+    #print(f'\n 확인을 위한 출력 response.text :\n{results}')
+    # 다음 페이지로 이동하기 위해 pageIndex 값을 1 증가시킴
+    popup_params['pageIndex'] += 1
+    
+    # 마지막 페이지인지 확인
+    if len(temp_df) < popup_params['pageSize']:
+        break
+
+#결과데이터를 csv화일로 출력
+print(f'\n 최종확인 출력 results 최종출력은 \n {results}\n')
+file_path = os.path.join(os.getcwd(), 'CrawlStockInfo','stockCodeList_test_029.csv')
+#results['종목코드'] = results['종목코드'].astype(str)
+results.to_csv(file_path, index=False)
+
+이 코드는 KRX에서 상장된 모든 종목의 종목 코드, 종목명, 업종, 주요제품, 상장일, 결산월, 대표자명, 홈페이지, 지역 등의 정보를 수집하는 웹 크롤러입니다.
+
+requests, pandas, os 모듈을 불러옵니다.
+main_url 변수에 KRX 코스피/코스닥 상장사 목록이 있는 페이지의 URL을 할당합니다.
+
+main_params 변수에 POST 요청을 보낼 때 전송할 데이터를 딕셔너리 형태로 할당합니다.
+requests 모듈의 post 메소드를 이용하여 main_url에 main_params를 전송하여 main_response를 받아옵니다.
+
+main_response.url을 이용하여 팝업 창 URL을 추출하여 popup_url 변수에 할당합니다.
+
+popup_url에 GET 요청을 보내어 popup_response 변수에 할당합니다.
+
+popup_params 변수에 POST 요청을 보낼 때 전송할 데이터를 딕셔너리 형태로 할당합니다.
+results 변수를 빈 데이터프레임으로 초기화합니다.
+while문을 이용하여 페이지를 계속 이동하면서 데이터를 수집합니다.
+requests 모듈의 post 메소드를 이용하여 popup_url에 popup_params를 전송하여 popup_response를 받아옵니다.
+받아온 popup_response에서 read_html() 메소드를 이용하여 데이터를 추출하여 temp_df 변수에 할당합니다.
+temp_df에서 '종목코드' 열의 값을 문자열로 변경하기 위해 converters 매개변수에 {'종목코드': str}을 추가합니다.
+results 데이터프레임과 temp_df 데이터프레임을 concat 메소드를 이용하여 합치고, ignore_index 매개변수를 True로 설정하여 인덱스를 재설정합니다.
+pageIndex 값을 1 증가시키고, 마지막 페이지인지 확인하여 마지막 페이지일 경우 while문을 빠져나옵니다.
+결과 데이터를 CSV 파일 또는 TXT 파일로 출력합니다. 출력 형식은 to_csv() 메소드 또는 to_string() 메소드로 설정할 수 있습니다.
+
+
+
+
+User
+main_url변수에 POST요청을 보낼때 전송할 데이터를 딕셔너리 형태로 할당하는 이유가 무엇입니까?
+ChatGPT
+main_url 변수에 POST 요청을 보낼 때 전송할 데이터를 딕셔너리 형태로 할당하는 이유는 
+HTTP 프로토콜에서 POST 요청을 보낼 때 데이터를 전송하기 위한 방법 중 하나가 딕셔너리 형태로 데이터를 전송하는 것이 가장 흔하기 때문입니다.
+
+딕셔너리 형태로 데이터를 전송하면, 데이터를 key-value 쌍으로 묶어서 전송할 수 있기 때문에 
+전송하는 데이터의 이름과 값을 쉽게 파악할 수 있습니다. 또한, requests 모듈에서도 딕셔너리 형태로 데이터를 
+전송하는 것이 간편하기 때문에 이를 활용하고 있습니다.
+
+requests.get()에서도 딕셔너리 형태를 이용하나요
+ChatGPT
+네, requests.get() 메소드에서도 딕셔너리 형태를 이용하여 
+URL에 파라미터를 전송할 수 있습니다. 이때 파라미터는 key-value 형태의 딕셔너리로 전달되며, 파라미터는 '?' 
+문자 이후에 '&'로 연결하여 URL 뒤에 추가됩니다.
+
+예를 들어, 'http://example.com' 이라는 URL에 'id'와 'name' 파라미터를 전송하려면 아래와 같이 requests.get() 메소드를 사용할 수 있습니다.
+
+python
+Copy code
+import requests
+
+url = 'http://example.com'
+params = {'id': '1234', 'name': 'Alice'}
+response = requests.get(url, params=params)
+위의 예시에서 requests.get() 메소드의 params 매개변수에 파라미터를 담은 딕셔너리를 전달하였습니다. 
+이렇게 전달된 파라미터는 아래와 같은 URL로 전송됩니다.
+bash
+Copy code
+http://example.com?id=1234&name=Alice
+따라서, requests 모듈에서는 GET 방식에서도 딕셔너리 형태로 데이터를 전송할 수 있습니다.
+
+main_response.url이 무엇입니까?
+ChatGPT
+main_response.url은 requests 모듈에서 제공하는 Response 객체의 속성 중 하나로, 
+현재 요청에 대한 최종 URL을 문자열로 반환합니다. 
+이 속성을 이용하여 POST 요청을 보내어 얻은 응답 객체인 main_response에서 
+'팝업 창 URL을 추출'하고, 이를 다시 요청하는 용도로 사용하고 있습니다.
+
+예를 들어, main_url에 POST 요청을 보내어 얻은 응답 객체인 main_response의 url 속성을 출력하면 다음과 같은 결과가 나옵니다.
+import requests
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+main_params = {'method': 'loadInitPage'}
+main_response = requests.post(main_url, data=main_params)
+print(main_response.url)
+
+실행 결과:
+https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage
+위의 예시에서 main_response.url 속성은 main_url에 POST 요청을 보내어 
+응답받은 최종 URL을 문자열로 반환합니다. 따라서, 
+이를 이용하여 팝업 창 URL을 추출하고, 이를 다시 요청하는 용도로 사용합니다.
+
+
+
+POST는 클라이언트가 서버에게 어떤 데이터를 전달할 때 사용하는 방식이고, GET은 무엇입니까?
+ChatGPT
+GET은 HTTP 프로토콜에서 클라이언트가 서버에게 데이터를 요청하는 방식입니다. GET은 URL 주소 뒤에 "?"를 붙이고, 그 뒤에 데이터를 key-value 쌍으로 나열하여 요청합니다. 이러한 key-value 쌍은 "&"로 구분하여 나열됩니다.
+
+예를 들어, "http://www.example.com/search?q=apple"와 같은 URL 주소는 GET 방식으로 데이터를 요청하는 것입니다. 이 URL에서 "q"는 검색어를 나타내는 key이고, "apple"은 검색어의 값(value)입니다.
+
+GET은 데이터를 요청하는 용도로 사용되므로, 서버는 클라이언트의 요청에 대한 응답으로 데이터를 제공합니다. 이러한 데이터는 HTML 문서, 이미지, JSON 등의 형식이 될 수 있습니다.
+
+반면, POST 방식은 클라이언트가 서버에게 데이터를 전송하는 방식입니다. 이 방식은 HTML 폼(form)을 통해 데이터를 전송할 때 주로 사용됩니다. POST 방식은 요청 메시지의 body에 데이터를 담아서 전송합니다. 이러한 데이터는 URL 주소에 노출되지 않으므로 보안적인 측면에서 더 안전합니다.
+
+
+
+POST 요청 메시지 본문은 어디에 있나요?
+ChatGPT
+
+POST 요청 메시지 본문은 HTTP 요청 헤더와 별도로 전송되는 데이터 부분입니다. HTTP 요청 메시지는 크게 요청 라인, 요청 헤더, 요청 본문으로 나뉘며, 요청 본문은 HTTP 요청의 데이터 부분을 담당합니다.
+
+POST 요청 메시지 본문은 요청 헤더 다음에 위치하며, Content-Type과 Content-Length와 같은 요청 메타데이터와 함께 전송됩니다. 이때 Content-Type은 요청 본문의 데이터 형식을 지정하고, Content-Length는 요청 본문의 크기를 나타냅니다.
+
+예를 들어, POST 요청 메시지 본문에 JSON 형식으로 데이터를 담아 전송하는 경우, Content-Type은 'application/json'으로 설정하고, Content-Length는 전송할 데이터의 크기로 설정합니다. 아래는 requests 모듈을 이용하여 POST 요청을 보낼 때 요청 메시지 본문에 JSON 데이터를 담는 예시 코드입니다.
+
+python
+Copy code
+import requests
+import json
+
+url = 'http://example.com/data'
+data = {'name': 'Alice', 'age': 25}
+headers = {'Content-Type': 'application/json', 'Content-Length': str(len(json.dumps(data)))}
+response = requests.post(url, data=json.dumps(data), headers=headers)
+위의 예시에서, 요청 메시지 본문에 담을 데이터는 {'name': 'Alice', 'age': 25} 딕셔너리 데이터입니다. 
+이 데이터를 JSON 형식으로 인코딩한 후, requests.post() 메소드의 data 매개변수에 전달하여 요청 본문에 데이터를 담아 전송합니다. 
+이때, 요청 헤더에는 Content-Type과 Content-Length 정보도 함께 전송합니다.
+
+POST 요청을 보낼 때 요청 헤더를 전송하지 않는 경우도 있습니다. 이는 요청 헤더가 필수적인 정보가 아니라면 생략할 수 있기 때문입니다.
+위의 코드에서는 popup_response 변수에 저장된 값인 팝업 창 URL에서 GET 요청을 보내 데이터를 추출하고 있습니다. 
+이때, 요청 헤더를 따로 지정하지 않아도 requests 모듈에서는 기본적으로 User-Agent와 Accept-Encoding 정보가 포함된 
+요청 헤더를 자동으로 생성하여 전송합니다.
+따라서, POST 요청을 보낼 때 요청 헤더를 생략하더라도 requests 모듈에서는 필요한 정보를 자동으로 추가하여 전송합니다.
+#HTTP약속에서 클라이언트가 서버에게 요청을 보내는 방식에는 크게
+#두가지가 있는데, 하나는 우리가 배운 get방식이고, 하나가 post방식
+#post는 서버에게 데이터를 전달할때 사용하는 방식
+#get은 서버에게 데이터를 요청하는 방식이다.
+#post는 데이터를 요청 url뒤 ?에 연달아 붙여서 전송하는 get과 달리
+#요청헤더와 메시지 본문에 데이터를 담아서 전송한다. 
+#보안성이 높은 데이터(예: 로그인 정보, 결제 정보 등)를 전송할 때 
+#사용하며, 데이터의 크기에 제한이 없기 때문에 GET 방식보다 
+#더 많은 양의 데이터를 전송할 수 있다
+#post방식으로 http전송할때는 요청header와 요청data가 필요하다.
+#요청data는 딕셔너리형태로 위의 main_params처럼 넣어준다.
+#요청header는 필수적인 것이 아니다. 요청header를 생략하더라도
+#requests모듈이 필요정보를 자동으로 추가해준다.
+#requests 모듈에서는 기본적으로 User-Agent와 Accept-Encoding 
+#정보가 포함된 요청 헤더를 자동으로 생성하여 전송해준다.
+
+예, 해당 코드에서 popup_params로 설정된 값들은 https://kind.krx.co.kr/corpgeneral/corpList.do 페이지에서 상장종목을 조회하기 위한 POST 요청에 필요한 데이터들입니다. 이 데이터들을 이용하여 상장종목 데이터를 수집하는 코드가 작성되어 있습니다. 즉, popup_params는 POST 요청 시 전달되는 데이터들이며, 이를 통해 원하는 결과를 얻을 수 있습니다.
+
+
+
+
+
+User
+https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage 사이트에 들어가서
+개발자도구를 열고 Network탭에서 corpList.do 이름의 payload를 열면 아래와 같은 내용이 있습니다.
+payload가 무엇이며, 아래 내용은 각각 무엇입니까? payload가 어떤 역할을 합니까?
+
+method: searchCorpList
+pageIndex: 1
+currentPageSize: 15
+comAbbrv: 
+beginIndex: 
+orderMode: 3
+orderStat: D
+isurCd: 
+repIsuSrtCd: 
+searchCodeType: 
+marketType: 
+searchType: 13
+industry: 
+fiscalYearEnd: all
+comAbbrvTmp: 
+location: all
+ChatGPT
+Payload는 HTTP 요청에서 전송되는 데이터를 말합니다. 이 데이터는 서버가 클라이언트에게 제공할 정보와 서버가 클라이언트에게서 요청한 정보를 전달하는 역할을 합니다.
+
+corpList.do는 kind.krx.co.kr의 서버에서 실행되는 프로그램의 일부입니다. 이 URL에 대한 POST 요청을 보내면, 프로그램은 요청된 정보를 처리하고 응답으로 결과 데이터를 보냅니다. 이 POST 요청의 Payload는 다음과 같습니다.
+
+method: 이 요청에서 실행할 메서드의 이름입니다. 이 경우에는 "searchCorpList"입니다.
+pageIndex: 검색 결과의 페이지 번호입니다. 이 요청에서는 1입니다.
+currentPageSize: 한 페이지당 표시할 결과 수입니다. 이 요청에서는 15입니다.
+comAbbrv: 회사 약어입니다. 이 요청에서는 비어 있습니다.
+beginIndex: 검색 결과의 시작 인덱스입니다. 이 요청에서는 비어 있습니다.
+orderMode: 검색 결과의 정렬 방식입니다. 이 요청에서는 3입니다.
+orderStat: 검색 결과의 정렬 순서입니다. 이 요청에서는 D입니다.
+isurCd: 종목 코드입니다. 이 요청에서는 비어 있습니다.
+repIsuSrtCd: 대표 종목 코드입니다. 이 요청에서는 비어 있습니다.
+searchCodeType: 검색할 종목 코드 유형입니다. 이 요청에서는 비어 있습니다.
+marketType: 검색할 시장 유형입니다. 이 요청에서는 비어 있습니다.
+searchType: 검색할 종목 유형입니다. 이 요청에서는 13입니다.
+industry: 검색할 산업 유형입니다. 이 요청에서는 비어 있습니다.
+fiscalYearEnd: 회계년도입니다. 이 요청에서는 모든 회계년도를 검색합니다.
+comAbbrvTmp: 회사 약어입니다. 이 요청에서는 비어 있습니다.
+location: 회사 위치입니다. 이 요청에서는 모든 위치를 검색합니다.
+이 Payload는 kind.krx.co.kr에서 실행되는 서버 프로그램에서 검색 결과를 생성하고 반환하는 데 사용됩니다. 이 정보는 웹 사이트에서 사용자에게 표시되는 종목 정보를 검색하는 데 사용됩니다.
+
+import requests
+import pandas as pd
+import os
+
+# 메인 페이지 URL
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+
+# 메인 페이지 url에 아래와 같이 요청데이터를 넣어서 post requests로
+# 상장법인 목록 페이지의 팝업 창 URL 추출하는 절차를 실행한다.
+main_params = {
+    'method': 'loadInitPage'
+}
+main_response = requests.post(main_url, data=main_params)
+#HTTP약속에서 클라이언트가 서버에게 요청을 보내는 방식에는 크게
+#두가지가 있는데, 하나는 우리가 배운 get방식이고, 하나가 post방식
+#post는 서버에게 데이터를 전달할때 사용하는 방식
+#get은 서버에게 데이터를 요청하는 방식이다.
+#post는 데이터를 요청 url뒤 ?에 연달아 붙여서 전송하는 get과 달리
+#요청헤더와 메시지 본문에 데이터를 담아서 전송한다. 
+#보안성이 높은 데이터(예: 로그인 정보, 결제 정보 등)를 전송할 때 
+#사용하며, 데이터의 크기에 제한이 없기 때문에 GET 방식보다 
+#더 많은 양의 데이터를 전송할 수 있다
+#post방식으로 http전송할때는 요청header와 요청data가 필요하다.
+#요청data는 딕셔너리형태로 위의 main_params처럼 넣어준다.
+#요청header는 필수적인 것이 아니다. 요청header를 생략하더라도
+#requests모듈이 필요정보를 자동으로 추가해준다.
+#requests 모듈에서는 기본적으로 User-Agent와 Accept-Encoding 
+#정보가 포함된 요청 헤더를 자동으로 생성하여 전송해준다.
+print(f'\n\n  main_response: {main_response.status_code}\n\n')
+
+popup_url = main_response.url
+#위에서 .url은 response객체의 속성이다.
+#post방식으로 요청하여 응답받은 main_response에서
+#' 팝업 창 url '을 ' 추출 '하기 위해서 .url속성을 사용하였다.
+#.url은 요청에 대한 최종 url을 '문자열'로 반환하는 속성이다.
+
+print(f'\n\n******이것이 popup_url 입니다. {popup_url}\n\n')
+#위와같이 출력해보면 popup_url 주소는 
+#https://kind.krx.co.kr/corpgeneral/corpList.do
+#위 주소를 직접 브라우저에 입력하면 KRX가 get방식으로 직접 접근을 
+#막아놓았다는 것을 알 수 있다. ? 뒤에 요청data를 직접입력해도
+#계속 안내멘트 사이트만 뜨는 것이다.
+#poost requests를 통해 정보를 받기 위해서 아래와 같은 포맷으로
+#요청을 구성해야 한다.  response = requests.post(url, 요청데이터)
+#상장법인목록을 다운로드받기 위한 POST requests의 요청데이터는 상장법인목록
+#https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage
+#사이트의 F12 개발자도구를 열어놓고 상장법인목록을 한꺼번에 
+#다운로드 받을 '검색'아이콘옆에 있는 '엑셀'아이콘을 클릭했을때
+#Network탭에서 생성되는 corpList.do 이름의 Network탭 Payload에서
+#요청데이터를 확인할 수 있다. 
+
+#팝업 창 URL에서 페이지 이동을 위한 데이터 추출
+popup_response = requests.get(popup_url)
+#popup_url 즉, https://kind.krx.co.kr/corpgeneral/corpList.do에서
+#상장종목목록을 가져와야 되는데, 브라우저에서 들어가보면 정보가 없다.
+#그래서 팝업 창을 열기 위해 GET 요청을 보내는 이유는, 
+#서버에서는 팝업 창을 열기 위한 HTML 페이지를 반환하기 때문. 
+#이 HTML 페이지는 브라우저에서 실행되어야 하므로, 
+#GET 요청을 이용하여 HTML 페이지를 받아온 뒤, 
+#이를 이용하여 팝업 창을 띄운다.
+#따라서, main_response 객체에서 추출한 팝업 창 URL을 
+#이용하여 GET 요청을 보내는 것
+#그리고, post가 아닌 get으로 requests를 보내는 이유는 
+#https://kind.krx.co.kr/corpgeneral/corpList.do 사이트에서
+#F12를 클릭하여 '개발자도구'를 열고 Network탭으로 들어간 뒤에
+#페이지고침을 클릭해서 Network 정보를 확인한뒤 header탭으로 들어가
+#General을 보면 '요청메서드(requests method)'가 get 으로
+#되어 있기 때문이다. 이제 .status_code를 통해 결과값이 200인지 확인
+#print(popup_response.status_code)  # 결과값이 200 이 나올 것이다.
+
+popup_params = {
+    'method': 'download',
+    'searchType': '13',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all',
+    'marketType': 'ALL',
+    'pageIndex': 1,
+    'pageSize': 3000,
+}
+
+#위 코드가 바로 POST requests에서 사용할 요청header와 
+#요청data중에서 ' 요청data '에 해당한다. 
+#이름을 popup_params로 했다.
+#위의 요청데이터의 키와 값은 상장법인목록 사이트
+#https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage
+#사이트의 F12 눌러서 개발자도구를 열어놓고 '검색'아이콘옆에 있는
+#상장법인목록을 한꺼번에 다운로드 받을  '엑셀' 아이콘을 클릭했을때
+#Network탭에서 생성되는 corpList.do 이름의 Network탭 Payload에서
+#요청데이터를 확인할 수 있다. 
+#corpList.do가 여러개 있는데, 반드시 '엑셀'아이콘을 눌렀을때 생성되는
+#corpList.do이름의 network탭 Payload를 확인해야 된다.
+#그리고, 브라우저는 반드시 chrome을 써라 웨일같은 브라우저에는
+#payload가 표시되지 않을 수 있다.
+
+# 숫자(종목코드) 출력 형식을 변경하는 코드인데, 아래 두 코드는 종목코드의 숫자앞 0을 유지시키는데 전혀 쓸모가 없었다.
+#pd.option.display.float_format = '{:.of}'.format
+#pd.set_option('float_format', '{:2f}'.format)
+
+
+# 첫 페이지부터 마지막 페이지까지 데이터 수집
+results = pd.DataFrame()
+while True:
+    # 페이지 이동을 위한 데이터를 이용하여 POST 요청 보내기
+    popup_response = requests.post(popup_url, data=popup_params)
+    #print(f'\n 출력 popup_response는 \n {popup_response.text}\n')
+    temp_df = pd.read_html(popup_response.text, converters={'종목코드': str})[0]
+    #converters={'종목코드': str}을 read_html()메소드의 매개변수로
+    #추가했다. 종목코드에서 숫자앞의 0이 유지될 수 있도록 
+    #추가한 것이다. 숫자로만 이뤄진 종목코드 열을
+    #이렇게 판다스 데이터프레임에서 '문자열'로 인식할 수 있도록
+    #html문서안에서 작업을 미리 해주어야 한다.
+    #html문서안에서 작업을 안해주고 판다스 pandas read메소드로
+    #읽어들인 후에 종목코드 열을 문자열로 처리해도 이미 읽어드릴때
+    #숫자열로 읽어들이면서 숫자앞의 0을 무시해버렸기 때문에
+    #이미 000100은 100이 되어 있는 상태에서 문자열이 되는것이다
+    #따라서, html문안에서 converters매개변수로 바꿔주고 pandas로 
+    #읽어야 된다. pandas데이터프레임에서 문자열로 된 상태로 하더라도
+    #to-csv()메소드를 통해 csv파일을 만들때 to_csv()메소드가
+    #숫자로만 되어 있는 종목코드 열을 '문자열'로 지정되어 있슴에도
+    #불구하고 '숫자'로 추론하여 숫자앞의 0을 무시하고 000100을
+    #다시 100으로 출력해버린다. 이것은 df문을 출력해보고,
+    #csv파일을 출력해서 비교해 보면 df데이터프레임문에서는 문자열인데
+    #csv파일의 종목코드열에서는 숫자앞의 0이 무시되어 숫자열로
+    #처리되어 있는 것을 확인할 수 있다.
+    #to-csv파일로 출력할때 숫자앞의 0이 유지되도록 하는 방법은
+    #아직 찾질 못했다. 아래와 같이 써서
+    #temp_df['종목코드'] = '"' + temp_df['종목코드'] + '"'
+    #쌍따옴표안에 숫자를 넣고 문자열로 인식시켜서 숫자앞의 0이
+    #유지되도로 하여 csv로 출력하고,
+    #csv화일의 종목코드 열을 읽어들일때는 .strip('"') 메소드를
+    #사용해서 쌍따옴표를 없애는 방법밖에는 찾지 못했다.
+    #print(f'\n 출력 temp_df는 \n {temp_df}\n')
+    temp_df['종목코드'] = temp_df['종목코드'].astype(str) # 쑷자앞에 0을 유지시키기 위해서 타입을 str(문자열)로 변경시킨다.
+    #temp_df['종목코드'] = '  temp_df['종목코드']  '
+    #temp_df['종목코드'] = '"' + temp_df['종목코드'] + '"'
+    #temp_df['종목코드'] = temp_df['종목코드'].apply(lambda x: f'"{x:0>6}"')
+    results = pd.concat([results, temp_df], ignore_index=True)
+    #print(f'\n 확인을 위한 출력 response.text :\n{results}')
+    # 다음 페이지로 이동하기 위해 pageIndex 값을 1 증가시킴
+    popup_params['pageIndex'] += 1
+    
+    # 마지막 페이지인지 확인
+    if len(temp_df) < popup_params['pageSize']:
+        break
+
+#결과데이터를 csv화일로 출력
+#print(f'\n 최종확인 출력 results 최종출력은 \n {results}\n')
+#file_path = os.path.join(os.getcwd(), 'CrawlStockInfo','stockCodeList_test_029.csv')
+#results['종목코드'] = results['종목코드'].astype(str)
+#results.to_csv(file_path, index=False)
+
+#결과데이터를 txt화일로 출력
+#text_file_path = os.path.join(os.getcwd(), 'CrawlStockInfo','stockCodeList_test_001.txt')
+#with open(text_file_path, 'w') as f:
+#    f.write(results.to_string(index=False))
