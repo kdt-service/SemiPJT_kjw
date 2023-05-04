@@ -1,0 +1,53 @@
+import requests
+import pandas as pd
+import os
+
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+main_params = {
+    'method': 'loadInitPage'
+}
+main_response = requests.post(main_url, data=main_params)
+print(f'\n\n  main_response: {main_response.status_code}\n\n')
+popup_url = main_response.url
+popup_response = requests.get(popup_url)
+popup_params = {
+    'method': 'download',
+    'searchType': '13',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all',
+    'marketType': 'ALL',
+    'pageIndex': 1,
+    'pageSize': 3000,
+}
+popup_response = requests.post(popup_url, data=popup_params)
+print(f'popup_response:  {popup_response.status_code}')
+temp_df = pd.read_html(popup_response.text, converters={'종목코드': str})[0]
+        #converters={'종목코드': str}을 read_html()메소드의 매개변수로
+        #추가했다. 종목코드에서 숫자앞의 0이 유지될 수 있도록 
+        #추가한 것이다. 숫자로만 이뤄진 종목코드 열을
+        #이렇게 판다스 데이터프레임에서 '문자열'로 인식할 수 있도록
+        #html문서안에서 작업을 미리 해주어야 한다.
+        #html문서안에서 작업을 안해주고 판다스 pandas read메소드로
+        #읽어들인 후에 종목코드 열을 문자열로 처리해도 이미 읽어드릴때
+        #숫자열로 읽어들이면서 숫자앞의 0을 무시해버렸기 때문에
+        #이미 000100은 100이 되어 있는 상태에서 문자열이 되는것이다
+        #따라서, html문안에서 converters매개변수로 바꿔주고 pandas로 
+        #읽어야 된다. pandas데이터프레임에서 문자열로 된 상태로 하더라도
+        #to-csv()메소드를 통해 csv파일을 만들때 to_csv()메소드가
+        #숫자로만 되어 있는 종목코드 열을 '문자열'로 지정되어 있슴에도
+        #불구하고 '숫자'로 추론하여 숫자앞의 0을 무시하고 000100을
+        #다시 100으로 출력해버린다. 이것은 df문을 출력해보고,
+        #csv파일을 출력해서 비교해 보면 df데이터프레임문에서는 문자열인데
+        #csv파일의 종목코드열에서는 숫자앞의 0이 무시되어 숫자열로
+        #처리되어 있는 것을 확인할 수 있다.
+        #to-csv파일로 출력할때 숫자앞의 0이 유지되도록 하는 방법은
+        #아직 찾질 못했다. 아래와 같이 써서
+        #temp_df['종목코드'] = '"' + temp_df['종목코드'] + '"'
+        #쌍따옴표안에 숫자를 넣고 문자열로 인식시켜서 숫자앞의 0이
+        #유지되도로 하여 csv로 출력하고,
+        #csv화일의 종목코드 열을 읽어들일때는 .strip('"') 메소드를
+        #사용해서 쌍따옴표를 없애는 방법밖에는 찾지 못했다.
+temp_df['종목코드'] = '"' + temp_df['종목코드'] + '"'
+file_path = os.path.join(os.getcwd(), 'CrawlStockInfo','stockCodeList_test_0369.csv')
+temp_df.to_csv(file_path, index=False)

@@ -1858,3 +1858,423 @@ while True:
 #text_file_path = os.path.join(os.getcwd(), 'CrawlStockInfo','stockCodeList_test_001.txt')
 #with open(text_file_path, 'w') as f:
 #    f.write(results.to_string(index=False))
+
+
+import requests
+import pandas as pd
+import os
+
+# 메인 페이지 URL
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+
+main_params = {
+    'method': 'loadInitPage'
+}
+main_response = requests.post(main_url, data=main_params)
+print(f'\n\n  main_response: {main_response.status_code}\n\n')
+
+popup_url = main_response.url
+print(f'\n\n******이것이 popup_url 입니다. {popup_url}\n\n')
+
+#팝업 창 URL에서 페이지 이동을 위한 데이터 추출
+popup_response = requests.get(popup_url)
+
+popup_params = {
+    'method': 'download',
+    'searchType': '13',
+    'fiscalYearEnd': 'all',
+    'comAbbrvTmp': '',
+    'location': 'all',
+    'marketType': 'ALL',
+    'pageIndex': 1,
+    'pageSize': 3000,
+}
+
+
+# 첫 페이지부터 마지막 페이지까지 데이터 수집
+results = pd.DataFrame()
+
+# 페이지 이동을 위한 데이터를 이용하여 POST 요청 보내기
+popup_response = requests.post(popup_url, data=popup_params)
+#print(f'\n 출력 popup_response는 \n {popup_response.text}\n')
+temp_df = pd.read_html(popup_response.text, converters={'종목코드': str})[0]
+print(f'\n 출력 temp_df는_____ \n\n {temp_df}\n\n')
+print(f'len(temp_df):   {len(temp_df)}\n\n')
+
+
+file_path = os.path.join(os.getcwd(), 'CrawlStockInfo','stockCodeList_test_033.csv')
+temp_df.to_csv(file_path, index=False)
+
+
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+import io
+    
+main_url = 'https://kind.krx.co.kr/corpgeneral/corpList.do'   # ?method=loadInitPage'
+main_params ={
+    'method' : 'loadInitPage'
+}   #main_params를 요청데이터에 넣으면 상장법인목록 
+main_response = requests.post(main_url, data=main_params)
+popup_url = main_response.url  #.url을 통해 요청http에서 보내준 팝업창 url을 추출할 수 있다.
+print(f'popup_url주소는 {popup_url}') #https://kind.krx.co.kr/corpgeneral/corpList.do 인 것을 알 수 있다.
+popup_response_1 = requests.get(popup_url)  
+popup_response_1.status_code  #200인지? 확인
+popup_params ={
+    'method':'download',
+    'searchType':'all',
+    'fiscalYearEnd':'',
+    'comAbbrvTmp':'',
+    'location': 'all',
+    'marketType':'ALL',
+    'pageIndex':1,
+    'pageSize': 3000
+}
+popup_response_2 = requests.post(popup_url, data=popup_params)
+df_code = pd.read_html(popup_response_2.text, converters={'종목코드': str})[0]
+df_code['종목코드'] = '"' + df_code['종목코드'] + '"'  #종목코드열의 숫자앞에 0이 to_csv()함수에서 처리될때 무시되지 않도록 구문추가
+file_path = os.path.join(os.getcwd(), 'FileHouseStock', 'stockcode.csv')
+df_code.to_csv(file_path, index=False)  #DataFrame의 인덱스를 csv파일에 포함시키지 않으려고 False로 설정
+    
+
+import scrapy
+import pandas as pd
+from scrapy.http import FormRequest
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+
+class StockCodeSpider(scrapy.Spider):
+    name = 'stockcode'
+    allowed_domains = ['kind.krx.co.kr']
+    start_urls = ['https://kind.krx.co.kr/corpgeneral/corpList.do?method=loadInitPage']
+
+    def parse(self, response):
+        # 조회 버튼 클릭 후 들어온 새 창 URL 추출
+        open_popup_js = response.css('a.btn2::attr(onclick)').extract_first()
+        url = open_popup_js.split("'")[1]
+
+        # 상장법인 목록 POST 요청
+        yield FormRequest(
+            url,
+            method='POST',
+            formdata={
+                'mktTpCd': 'ALL',
+                'searchText': '',
+                'currentPage': '1',
+                'pageSize': '5000'
+            },
+            callback=self.parse_table
+        )
+
+    def parse_table(self, response):
+        # 페이지내 table태그를 추출하여 pandas DataFrame으로 읽기
+        dfs = pd.read_html(response.text)
+        df = dfs[0]
+        
+        # 필요한 컬럼만 선택하여 item으로 저장 및 반환
+        for row in df.itertuples():
+            item = CrawlstockinfoItem(
+                회사명=row[2],
+                종목코드=row[3],
+                업종=row[4],
+                주요제품=row[5],
+                상장일=row[6],
+                결산월=row[7],
+                대표자명=row[8],
+                홈페이지=row[9],
+                지역=row[10]
+            )
+            print('#'*20)
+            print('회사명:  ', item['회사명'])
+            print('종목코드:  ', item['종목코드'])
+            print('업종:  ', item['업종'])
+            print('#'*20)
+            yield item
+
+
+import requests
+import pandas as pd
+import scrapy
+from bs4 import BeautifulSoup
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+# 메인페이지 url
+url_test = 'https://kind.krx.co.kr/corpgeneral/corpList.do'
+params_test = {'method': 'loadInitPage'}
+rs_test = requests.post(url_test, data=params_test)
+start_url = rs_test.url
+
+rs_start_url = requests.get(start_url)
+
+class StockCodeSpider(scrapy.Spider):
+    name = "stockcode"
+    allowed_domains = ['kind.krx.co.kr']
+    start_urls = [start_url]
+
+    def parse(self, response):
+        open_popup_js = response.css('a.btn2::attr(onclick)').extract_first()
+        url = open_popup_js.split("'")[1]
+        # 상장법인 목록 POST 요청
+        yield scrapy.FormRequest(
+            url,
+            method='POST',
+            formdata={
+                'method':'download',
+                'searchType':'all',
+                'fiscalYearEnd':'',
+                'comAbbrvTmp':'',
+                'location': 'all',
+                'marketType':'ALL',
+                'pageIndex':1,
+                'pageSize': 3000
+            },
+            callback=self.parse_table
+        )
+
+    def parse_table(self, response):
+        # 페이지 내 테이블 추출
+        soup = BeautifulSoup(response.text, 'html.parser')
+        table = soup.find('table')
+
+        # 테이블을 Pandas 데이터프레임으로 변환
+        df = pd.read_html(str(table))[0]
+
+        # 필요한 컬럼만 선택하여 item으로 저장 및 반환
+        for row in df.itertuples():
+            item = CrawlstockinfoItem()
+            item['회사명'] = row[2]
+            item['종목코드'] = row[3]
+            item['업종'] = row[4]
+            item['주요제품'] = row[5]
+            item['상장일'] = row[6]
+            item['결산월'] = row[7]
+            item['대표자명'] = row[8]
+            item['홈페이지'] = row[9]
+            item['지역'] = row[10]
+            print('#'*20)
+            print('회사명:  ', item['회사명'])
+            print('종목코드:  ', item['종목코드'])
+            print('업종:  ', item['업종'])            
+            print('#'*20)
+            yield item
+
+            print('#'*20)
+            print('회사명:  ', item['회사명'])
+            print('종목코드:  ', item['종목코드'])
+           
+
+#middle > div.h_company
+
+
+import pandas as pd
+import scrapy
+from CrawlStockInfo.items import CrawlstockinfoItem
+
+class StockCodeSpider(scrapy.Spider):
+    name = "stockcode"
+    
+    def start_requests(self):
+        # stockcode.csv 파일에서 종목코드 읽어오기
+        stock_codes = pd.read_csv('D:\MultiCampus\semi_pjt_kjw\kjwSemiPjt\scrapy\crawlingByScrapy\CrawlStockInfo\CrawlStockInfo\FileHouseStock\stockcode.csv')
+        for code in stock_codes['종목코드']:
+            url = f'https://finance.naver.com/item/coinfo.naver?code={code}'
+            yield scrapy.Request(url=url, callback=self.parse, meta={'code': code})
+
+    def parse(self, response):
+        item = CrawlstockinfoItem()
+        code = response.meta['code']
+        item['종목명'] = response.css('#middle > div.h_company > div.wrap_company > h2 > a::text').get()
+        item['종목코드'] = code
+        item['업종구분'] = response.css('#pArea > div.wrapper-table > div > table > tbody > tr:nth-child(1) > td > dl > dt:nth-child(4) a::text').get()
+        item['투자의견'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(1) > td > em::text').get()
+        item['현재가'] = response.css('#chart_area > div.rate_info > div > p.no_today > em > span.blind::text').get()
+        item['매출액'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(1) > td:nth-child(2)::text').get()
+        item['순이익'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(2)::text').get()
+        item['순이익율'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(4)::text').get()
+        item['PER'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(3) > td em::text').get()
+        item['PBR'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(5) > td em::text').get()
+        item['ROE'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(9) > td em::text').get()
+        item['배당수익율'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(11) > td em::text').get()
+        item['부채비율'] = response.css('#tab_con1 > div:nth-child(4) > table > tbody > tr:nth-child(2) > td:nth-child(2)::text').get()
+        
+        print('#'*20)
+        print('종목명:  ', item['종목명'])
+        print('종목
+
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+import io
+import re
+import glob
+from CrawlStockInfo.items import CrawlstockinfoItem
+from bs4 import BeautifulSoup
+
+
+class StockCodeSpider(scrapy.Spider):
+    name = "stockinfo"
+    
+    def start_requests(self):
+        #종목코드 읽어오기 from stockcode.csv
+        #file_path = os.path.join(os.getcwd(), 'FileHouseStock', 'stockcode.csv')
+        file_path = os.path.join(os.getcwd(), 'FileHouseStock')
+        file_list = glob.glob(os.path.join(file_path, '*.csv'))
+        file_latest = max(file_list, key= os.path.getctime)
+        stock_codes = pd.read_csv(file_latest)
+        stock_codes['종목코드'] = stock_codes['종목코드'].strip('"')
+        for code in stock_codes['종목코드']:
+            url = f'https://finance.naver.com/item/coinfo.naver?code={code}'
+            yield scrapy.Request(url=url, callback=self.parse, meta={'code': code})
+ 
+    
+    def parse(self, response):
+        print(f'\n\n확인용출력:\n\n{response.text[:1000]}\n\n')
+        item = CrawlstockinfoItem()
+        code = response.meta['code']
+        item['종목명'] = response.css('#middle > div.h_company > div.wrap_company > h2 > a::text').get()
+        item['종목코드'] = code
+        item['업종구분'] = response.css('#pArea > div.wrapper-table > div > table > tbody > tr:nth-child(1) > td > dl > dt:nth-child(4) a::text').get()
+        item['투자의견'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(1) > td > em::text').get()
+        item['현재가'] = response.css('#chart_area > div.rate_info > div > p.no_today > em > span.blind::text').get()
+        item['매출액'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(1) > td:nth-child(2)::text').get()
+        item['순이익'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(2)::text').get()
+        item['순이익율'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(4)::text').get()
+        item['PER'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(3) > td em::text').get()
+        item['PBR'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(5) > td em::text').get()
+        item['ROE'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(9) > td em::text').get()
+        item['배당수익율'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(11) > td em::text').get()
+        item['부채비율'] = response.css('#tab_con1 > div:nth-child(4) > table > tbody > tr:nth-child(2) > td:nth-child(2)::text').get()
+        
+        print('#'*20)
+        print('종목명:  ', item['종목명'])
+        print('종목코드:  ', item['종목코드'])
+        print('업종구분:  ', item['업종구분'])            
+        print('#'*20)
+        yield item
+
+
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+import io
+import re
+import glob
+from CrawlStockTest.items import CrawlstocktestItem
+from bs4 import BeautifulSoup
+
+
+class StockCodeSpider(scrapy.Spider):
+    name = "stockinfotest"
+    
+    def start_requests(self):
+        file_path = os.path.join(os.getcwd(), 'FileHouseStock', 'stockcode.csv')
+        #file_list = glob.glob(os.path.join(file_path, 'stockcode_*.csv'))
+        #file_latest = max(file_list, key= os.path.getctime)
+        #stock_codes = pd.read_csv(file_latest)
+        stock_codes = pd.read_csv(file_path)
+        stock_codes['종목코드'] = stock_codes['종목코드'].str.strip('"')
+        for code in stock_codes['종목코드']:
+            url = f'https://finance.naver.com/item/coinfo.naver?code={code}'
+            yield scrapy.Request(url=url, callback=self.parse, meta={'code': code})
+ 
+    
+    def parse(self, response):
+        print(f'\n\n확인용출력:\n\n{response.text[:1000]}\n\n')
+        item = CrawlstocktestItem()
+        code = response.meta['code']
+        item['종목명'] = response.css('#middle > div.h_company > div.wrap_company > h2 > a::text').get()
+        item['종목코드'] = code
+        item['종목코드'] = '"'+item['종목코드']+'"'
+        item['업종구분'] = response.css('#pArea > div.wrapper-table > div > table > tbody > tr:nth-child(1) > td > dl > dt:nth-child(4) a::text').get()
+        item['투자의견'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(1) > td > em::text').get()
+        item['현재가'] = response.css('#chart_area > div.rate_info > div > p.no_today > em > span.blind::text').get()
+        item['매출액'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(1) > td:nth-child(2)::text').get()
+        item['순이익'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(2)::text').get()
+        item['순이익율'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(4)::text').get()
+        item['PER'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(3) > td em::text').get()
+        item['PBR'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(5) > td em::text').get()
+        item['ROE'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(9) > td em::text').get()
+        item['배당수익율'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(11) > td em::text').get()
+        item['부채비율'] = response.css('#tab_con1 > div:nth-child(4) > table > tbody > tr:nth-child(2) > td:nth-child(2)::text').get()
+        
+        print('#'*20)
+        print('종목명:  ', item['종목명'])
+        print('종목코드:  ', item['종목코드'])
+        print('업종구분:  ', item['업종구분'])            
+        print('#'*20)
+        yield item
+
+#middle > div.h_company > div.wrap_company > h2 > a::text
+#pArea > div.wrapper-table > div > table > tbody > tr:nth-child(1) > td > dl > dt:nth-child(4)
+#pArea > div.wrapper-table > div > table > tbody > tr:nth-child(1) > td > dl > dt:nth-child(4)
+
+<dt class="line-left">KOSPI : 서비스업</dt>
+response.css('#pArea > div.wrapper-table > div > table > tbody > tr:nth-child(1) > td > dl > dt:nth-child(3)::text').get().split(':')[1].strip()
+
+#cTB15 > tbody > tr:nth-child(2) > td.noline-bottom.line-right.center.cUp > b
+#cTB15 > tbody > tr:nth-child(2) > td
+
+text = response.css('#cTB15 > tbody > tr:nth-child(2) > td::text').extract()
+value = text[0] if text else ''  # text가 있을 때는 첫 번째 요소, 없을 때는 빈 문자열 반환
+
+<img height="25" src="/images/graph_bar.gif" alt="투자의견 컨센서스 그래프(강력매도1|매도2|중립3|매수4|강력매수5), 값:3.78" usemap="#imgmap">
+<img height="25" src="/images/graph_bar.gif" alt="투자의견 컨센서스 그래프(강력매도1|매도2|중립3|매수4|강력매수5), 값:" usemap="#imgmap">
+//*[@id="cTB15"]/tbody/tr[2]/td[1]/b
+#cTB15 > tbody > tr:nth-child(2) > td.noline-bottom.line-right.center.cUp > b
+#bG05RlB6cn > table:nth-child(2) > tbody > tr:nth-child(1) > td:nth-child(4) > span
+
+
+import requests
+import pandas as pd
+import scrapy
+import os
+import csv
+import io
+import re
+import glob
+from CrawlStockInfo.items import CrawlstockinfoItem
+from bs4 import BeautifulSoup
+
+
+class StockCodeSpider(scrapy.Spider):
+    name = "stockinfo_test"
+    
+    def start_requests(self):
+        file_path = os.path.join(os.getcwd(), 'FileHouseStock')
+        file_list = glob.glob(os.path.join(file_path, 'stockcode_*.csv'))
+        file_latest = max(file_list, key= os.path.getctime)
+        stock_codes = pd.read_csv(file_latest)        
+        stock_codes['종목코드'] = stock_codes['종목코드'].str.strip('"')
+        for code in stock_codes['종목코드']:
+            url = f'https://finance.naver.com/item/coinfo.naver?code={code}'
+            yield scrapy.Request(url=url, callback=self.parse, meta={'code': code})
+ 
+    
+    def parse(self, response):
+        print(f'\n\n확인용출력:\n\n{response.text[:1000]}\n\n')
+        item = CrawlstockinfoItem()
+        code = response.meta['code']
+        item['종목명'] = response.css('#middle > div.h_company > div.wrap_company > h2 > a::text').get()
+        item['종목코드'] = code
+        item['종목코드'] = '"'+item['종목코드']+'"'
+        item['시장구분'] = response.css('#middle > div.h_company > div.wrap_company > div> img::attr(alt)').get()
+        item['업종구분'] = response.css('#pArea > div.wrapper-table >dt:nth-child(3)::text').get()
+        item['투자의견'] = response.xpath('//*[@id="cTB15"]/tbody/tr[2]/td[1]/b/text()').get()                                  
+        item['현재가'] = response.css('#chart_area > div.rate_info > div > p.no_today > em > span.blind::text').get()
+        item['매출액'] = response.css('#bG05RlB6cn > .gHead01 all-width > tbody > tr:nth-child(1) > td:nth-child(3) > span.blind::text').get()
+        item['순이익'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(2)::text').get()
+        item['순이익율'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(4) > td:nth-child(4)::text').get()
+        item['PER'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(3) > td em::text').get()
+        item['PBR'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(5) > td em::text').get()
+        item['ROE'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(9) > td em::text').get()
+        item['배당수익율'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(11) > td em::text').get()
+        item['부채비율'] = response.css('#tab_con1 > div:nth-child(4) > table > tbody > tr:nth-child(2) > td:nth-child(2)::text').get()

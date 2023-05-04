@@ -9,17 +9,21 @@ import scrapy
 class CrawlstockinfoItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
-    회사명 = scrapy.Field()
+    종목명 = scrapy.Field()
     종목코드 = scrapy.Field()
-    업종 = scrapy.Field()
-    주요제품 = scrapy.Field()
-    상장일 = scrapy.Field()
-    결산월 = scrapy.Field()
-    대표자명 = scrapy.Field()
-    홈페이지 = scrapy.Field()
-    지역 = scrapy.Field()
-    #pass
-    pass
-
+    시장구분 = scrapy.Field()
+    업종구분 = scrapy.Field()
+    투자의견 = scrapy.Field()
+    현재가 = scrapy.Field()
+    매출액 = scrapy.Field()
+    순이익 = scrapy.Field()
+    순이익율 = scrapy.Field()
+    PER = scrapy.Field()
+    PBR = scrapy.Field()
+    ROE = scrapy.Field()
+    배당수익율 = scrapy.Field()
+    부채비율 = scrapy.Field()
     
-
+    #pass
+    
+    

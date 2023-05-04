@@ -2,19 +2,18 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-
-
 # useful for handling different item types with a single interface
-import csv
 import os
 from scrapy.exporters import CsvItemExporter
 from itemadapter import ItemAdapter
-
+import datetime
 
 class CrawlstockinfoPipeline:
     def __init__(self):
-        file_path_03 = os.path.join(os.getcwd(), 'FileHouseStock', 'stockcode_new_02.csv')
-        self.file = open(file_path_03, 'wb')
+        time_stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+        file_name=f'stockinfo_{time_stamp}.csv'
+        file_path = os.path.join(os.getcwd(), 'FileHouseStock', file_name)
+        self.file = open(file_path, 'wb')
         self.exporter = CsvItemExporter(self.file, encoding='utf-8')
         self.exporter.start_exporting()
     
