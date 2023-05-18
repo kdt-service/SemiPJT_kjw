@@ -1,10 +1,6 @@
-import requests
 import pandas as pd
 import scrapy
 import os
-import csv
-import io
-import re
 import glob
 from CrawlStockInfo.items import CrawlstockinfoItem
 from bs4 import BeautifulSoup
@@ -17,8 +13,6 @@ class StockCodeSpider(scrapy.Spider):
         file_list = glob.glob(os.path.join(file_path, 'stockcode_*.csv'))
         file_latest = max(file_list, key= os.path.getctime)
         stock_codes = pd.read_csv(file_latest)
-        #file_path = os.path.join(os.getcwd(),'FileHouseStock', 'stockcodeTest.csv')
-        #stock_codes = pd.read_csv(file_path)
         stock_codes['종목코드'] = stock_codes['종목코드'].str.strip('"')
         for code in stock_codes['종목코드']:
             url = f'https://finance.naver.com/item/coinfo.naver?code={code}'
@@ -43,13 +37,14 @@ class StockCodeSpider(scrapy.Spider):
         item['ROE'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(9) > td em::text').get()
         item['배당수익율'] = response.css('#tab_con1 > div:nth-child(6) > table > tbody > tr:nth-child(11) > td em::text').get()
         item['부채비율'] = response.css('#tab_con1 > div:nth-child(4) > table > tbody > tr:nth-child(2) > td:nth-child(2)::text').get()
-        
-        print('#'*20)
-        print('종목명:  ', item['종목명'])
-        print('종목코드:  ', item['종목코드'])
-        print('업종구분:  ', item['업종구분'])            
-        print('#'*20)
         yield item
+
+
+        # print('#'*20)
+        # print('종목명:  ', item['종목명'])
+        # print('종목코드:  ', item['종목코드'])
+        # print('업종구분:  ', item['업종구분'])            
+        # print('#'*20)
 
         # img_tag = response.css('#pointerBG >img')
         # if img_tag:
@@ -60,3 +55,5 @@ class StockCodeSpider(scrapy.Spider):
         #item['투자의견'] = response.css('#cTB15 > tbody > tr:nth-child(2) > td.noline-bottom.line-right.center.cUp > b::text').get()
                 #item['투자의견'] = item['투자의견'][0] if item['투자의견'] else ''                                    
                         #item['매출액'] = response.css('#tab_con1 > div:nth-child(1) > table > tbody > tr:nth-child(1) > td:nth-child(2)::text').get()
+        #file_path = os.path.join(os.getcwd(),'FileHouseStock', 'stockcodeTest.csv')
+        #stock_codes = pd.read_csv(file_path)
